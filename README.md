@@ -65,6 +65,13 @@ Home Assistant Marketplace
 - **`/share/device/*` endpoints** (token sharing page) talk to GitHub's OAuth Device
   Flow on behalf of the visitor; the issued token is validated via `/user` and stays
   on the server side.
+- **`GET /api/token/get`** returns one pool record in the same JSON shape as
+  `tokenhub.hacs.vip/api/token/get` (`{"data": {...}}` with `id` / `created_at` /
+  `updated_at` / `type` / `login` / `token` / `use_count` / `remaining` / `expired_at` /
+  `deleted_at` / `usage`), so existing consumers switch by changing the URL only.
+  Primary source is this project's own KV pool; it falls back to tokenhub while the
+  pool is empty or unprovisioned. Tokens are revalidated against `rate_limit` and the
+  entry with the most remaining quota wins.
 
 ### Transparent pass-through vs. rewriting / 透传与改写
 
@@ -96,7 +103,9 @@ No proxy-related environment variables are required. The token-sharing endpoints
 ## Roadmap
 
 - [ ] Migrate the shared GitHub token pool from the external tokenhub to an EdgeOne Pages KV pool hosted in this project (visitors can voluntarily share tokens on the page; the page shows only masked stats — login / use count / remaining quota; raw tokens never leave the edge)
-- [ ] One-click token sharing via GitHub OAuth Device Flow: visitors click a button on the page, authorize a zero-scope OAuth App at github.com/login/device, and their token joins the pool automatically (no token ever touches the browser; per-visitor independent device codes; dead tokens auto-pruned via periodic revalidation)
+- [x] One-click token sharing via GitHub OAuth Device Flow: visitors click a button on the page, authorize a zero-scope OAuth App at github.com/login/device, and their token joins the pool automatically (no token ever touches the browser; per-visitor independent device codes; dead tokens auto-pruned via periodic revalidation)
+- [x] `GET /api/token/get` — tokenhub-compatible pool endpoint (same JSON shape; self-hosted KV pool primary, tokenhub fallback)
+- [ ] Wire the Device Flow success path into the KV pool insert (dedupe by login; currently the flow completes and drops the token until KV is provisioned)
 - [ ] Admin endpoints `export` / `import` (AdminKey auth) for KV backup & restore
 
 ## README
