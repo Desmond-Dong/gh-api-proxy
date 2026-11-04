@@ -27,8 +27,7 @@ Home Assistant Marketplace
     └─ raw.githubusercontent.com/<o>/<r>/<ref>/<path>
          被透明重映射到官方 Contents API：
          api.github.com/repos/<o>/<r>/contents/<path>?ref=<ref>
-         并附 Accept: application/vnd.github.raw（返回文件本体而非 JSON）。
-         （曾评估 jsDelivr 作为匿名替代，但 EdgeOne 出口同样连不上——2026-11-05 复测确认）
+         并附 Accept: application/vnd.github.raw（返回文件本体而非 JSON）
         ▼
 [3] 组装上游请求
     ├─ 显式设置 Host 头为目标域名（EdgeOne 运行时按 Host 路由，
@@ -41,7 +40,6 @@ Home Assistant Marketplace
     ├─ github.com            — 页面与 release 下载（302 → objects CDN，匿名）
     ├─ codeload.github.com   — 源码包（匿名）
     ├─ objects.githubusercontent.com — release 资产 CDN（匿名）
-    └─ （cdn.jsdelivr.net 已评估并否决：EdgeOne 出口不可达）
         ▼
 [5] 响应回传客户端
     ├─ 状态码原样透传（GitHub 的 404 就是 404）
@@ -57,8 +55,7 @@ Home Assistant Marketplace
   token 明文永不下发客户端、不写日志、不用于下载类端点。
 - **下载类端点保持匿名**（不消耗 API 配额）：release 下载、源码包、objects CDN。
 - **重映射 raw 文件会消耗共享池 API 配额**：raw 请求经 Contents API（认证）转发，
-  这是 EdgeOne 出口唯一可靠路径。曾评估 jsDelivr 作为匿名替代，但出口不可达
-  （2026-11-05 复测确认）。
+  这是 EdgeOne 出口唯一可靠的 raw 路径。
 - **`/share/device/*` 端点**（token 共享页）代表页面访客与 GitHub OAuth Device Flow 通信；
   签发的 token 经 `/user` 验证后只留在服务端。
 

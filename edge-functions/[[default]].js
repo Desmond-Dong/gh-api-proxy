@@ -127,9 +127,7 @@ export async function onRequest(context) {
   }
 
   // raw.githubusercontent.com remap / raw 域名改走官方 Contents API
-  // jsDelivr was tried and rejected: EdgeOne egress cannot reach it either (2026-11-05, clean test).
   // Contents API lives on api.github.com (reachable) and serves file bytes with the raw media type.
-  // jsDelivr 方案已实测否决：EdgeOne 出口同样连不上（2026-11-05 干净环境复测）。
   // Contents API 在可达的 api.github.com 上，附共享池 token 返回文件本体。
   let rawRemap = false;
   if (target.hostname === 'raw.githubusercontent.com') {
