@@ -61,7 +61,12 @@ export async function onRequest(context) {
   }
 
   // ---- 目标路径（先解析，后验 key，保证错误语义不受顺序影响）----
-  const path = Array.isArray(params.default) ? params.default.join('/') : (params.default || '');
+  // 路由为 /api/[[default]]，需自行校验第一段必须是 github：/api/github/<path>
+  const segments = Array.isArray(params.default) ? params.default : [params.default || ''];
+  if (segments[0] !== 'github') {
+    return jsonError(404, 'unknown api scope: use /api/github/<path>');
+  }
+  const path = segments.slice(1).join('/');
   if (!path) {
     return jsonError(400, 'empty path');
   }
