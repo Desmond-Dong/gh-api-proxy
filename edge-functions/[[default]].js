@@ -18,6 +18,11 @@
 import { getGithubToken, invalidateGithubToken } from './lib/github-token.js';
 
 // Upstream hosts allowed through the proxy / 允许代理的上游域名
+// NOTE: raw.githubusercontent.com (Fastly 185.199.x) is unreachable from EdgeOne egress,
+// so /https://raw.githubusercontent.com/... URLs are transparently remapped to jsDelivr
+// (same file content; branch/tag maps to @version).
+// 注：EdgeOne 出口连不上 Fastly 托管的 raw.githubusercontent.com，
+// raw 路径自动改走 jsDelivr 镜像（同文件内容；分支/标签映射为 @版本）
 const ALLOWED_HOSTS = new Set([
   'api.github.com',
   'github.com',
@@ -27,6 +32,7 @@ const ALLOWED_HOSTS = new Set([
   'gist.github.com',
   'gist.githubusercontent.com',
   'objects.githubusercontent.com',
+  'cdn.jsdelivr.net',
 ]);
 
 // UA whitelist: only requests containing this substring pass / UA 白名单：只放行包含该子串的请求
@@ -100,6 +106,17 @@ export async function onRequest(context) {
   }
   if (!ALLOWED_HOSTS.has(target.hostname)) {
     return jsonError(403, 'not allowed');
+  }
+
+  // raw.githubusercontent.com remap / raw 域名透明改走 jsDelivr
+  // /https://raw.githubusercontent.com/<user>/<repo>/<branch|tag>/<path...>
+  //   -> https://cdn.jsdelivr.net/gh/<user>/<repo>@<branch|tag>/<path...>
+  if (target.hostname === 'raw.githubusercontent.com') {
+    const segs = target.pathname.replace(/^\/+/, '').split('/');
+    if (segs.length >= 3) {
+      const [user, repo, ref, ...rest] = segs;
+      target = new URL(`https://cdn.jsdelivr.net/gh/${user}/${repo}@${ref}/${rest.join('/')}${target.search}`);
+    }
   }
   // Never forward proxy-internal params upstream / 代理内部参数不透传给上游
   target.searchParams.delete('key');
