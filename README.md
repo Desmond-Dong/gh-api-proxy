@@ -2,7 +2,7 @@
 
 EdgeOne Pages (Makers) Edge Function：GitHub API 反向代理。
 
-部署在 `gh-api.hasscn.top`，用于前端/脚本在国内直连访问 GitHub API。
+部署在 EdgeOne Pages，用于前端/脚本在国内直连访问 GitHub API。
 走腾讯 EdgeOne 大陆节点，出站请求 GitHub API（杭州移动家宽实测 200 / 0.7~2.3s）。
 
 ## 部署（EdgeOne Makers 控制台）
@@ -12,13 +12,13 @@ EdgeOne Pages (Makers) Edge Function：GitHub API 反向代理。
 3. 环境变量（Project Settings → Environment Variables）：
    - `GH_TOKEN` — GitHub fine-grained PAT（Public repositories 只读即可，限额 5000 次/时）
    - `PROXY_KEY` — 自定义访问密钥，防止接口被滥用
-4. Domain Management → 绑定 `gh-api.hasscn.top`（已备案域名），按提示加 DNS 验证 + CNAME，申请免费证书
+4. Domain Management → 绑定自定义域名（需已备案），按提示加 DNS 验证 + CNAME，申请免费证书
 
 ## 使用
 
 ```bash
-curl "https://gh-api.hasscn.top/api/github/rate_limit" -H "x-proxy-key: $PROXY_KEY"
-curl "https://gh-api.hasscn.top/api/github/repos/home-assistant/core/releases/latest" -H "x-proxy-key: $PROXY_KEY"
+curl "https://<your-domain>/api/github/rate_limit" -H "x-proxy-key: $PROXY_KEY"
+curl "https://<your-domain>/api/github/repos/home-assistant/core/releases/latest" -H "x-proxy-key: $PROXY_KEY"
 ```
 
 鉴权方式二选一：`x-proxy-key` 请求头，或 URL 追加 `?key=...`（会透传给 GitHub 的查询参数除外）。
