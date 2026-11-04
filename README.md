@@ -102,7 +102,7 @@ No proxy-related environment variables are required. The token-sharing endpoints
 
 ## Roadmap
 
-- [ ] Migrate the shared GitHub token pool from the external tokenhub to an EdgeOne Pages KV pool hosted in this project (visitors can voluntarily share tokens on the page; the page shows only masked stats — login / use count / remaining quota; raw tokens never leave the edge)
+- [ ] Migrate the shared GitHub token pool from the external tokenhub to an EdgeOne Pages KV pool hosted in this project (visitors can voluntarily share tokens on the page; the page shows only masked stats — login / use count / remaining quota; raw tokens never leave the edge). **KV storage has been applied for; pending Tencent Cloud review approval — pool wiring lands once provisioned.**
 - [x] One-click token sharing via GitHub OAuth Device Flow: visitors click a button on the page, authorize a zero-scope OAuth App at github.com/login/device, and their token joins the pool automatically (no token ever touches the browser; per-visitor independent device codes; dead tokens auto-pruned via periodic revalidation)
 - [x] `GET /api/token/get` — tokenhub-compatible pool endpoint (same JSON shape; self-hosted KV pool primary, tokenhub fallback)
 - [ ] Wire the Device Flow success path into the KV pool insert (dedupe by login; currently the flow completes and drops the token until KV is provisioned)
