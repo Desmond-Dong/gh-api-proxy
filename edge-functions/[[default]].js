@@ -9,8 +9,8 @@
 //   /https://codeload.github.com/<...>                -> source archives / 源码包
 //   /https://gist.githubusercontent.com/<...>         -> gist files / gist 文件
 //
-// Auth / 鉴权: UA must contain HomeAssistantMarketplace; key via x-proxy-key header or ?key=
-// UA 须含 HomeAssistantMarketplace；key 走 x-proxy-key 头或 ?key= 参数
+// Auth / 鉴权: UA must contain HomeAssistantMarketplace; non-GitHub hosts rejected
+// UA 须含 HomeAssistantMarketplace；非 GitHub 域名拒绝
 //
 // Downloads are streamed (no buffering) with Range resume support; no accept-encoding is sent.
 // 下载流式转发（不缓冲），支持 Range 断点续传；不声明 accept-encoding。
@@ -36,7 +36,7 @@ const ALLOWED_UA_SUBSTRING = 'HomeAssistantMarketplace';
 // 逐跳头 + 代理自身头，不透传给上游
 const STRIP_REQ_HEADERS = new Set([
   'host', 'connection', 'content-length', 'transfer-encoding',
-  'accept-encoding', 'x-proxy-key', 'x-forwarded-for',
+  'accept-encoding', 'x-forwarded-for',
   'x-forwarded-proto', 'x-forwarded-host', 'cf-connecting-ip',
   'x-real-ip', 'eo-connecting-ip', 'authorization',
 ]);
@@ -62,7 +62,7 @@ function jsonError(status, message) {
 // CORS headers for browser clients / 浏览器客户端的 CORS 头
 function withCors(headers) {
   headers.set('access-control-allow-origin', '*');
-  headers.set('access-control-allow-headers', 'authorization, content-type, x-proxy-key, range');
+  headers.set('access-control-allow-headers', 'authorization, content-type, range');
   headers.set('access-control-allow-methods', 'GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS');
   headers.set('access-control-expose-headers', 'content-length, content-range, etag, last-modified');
   return headers;
@@ -96,17 +96,8 @@ export async function onRequest(context) {
   if (!ALLOWED_HOSTS.has(target.hostname)) {
     return jsonError(403, 'not allowed');
   }
-  // Never forward the proxy key upstream / key 不透传给上游
+  // Never forward proxy-internal params upstream / 代理内部参数不透传给上游
   target.searchParams.delete('key');
-
-  // ---- Access key / 访问密钥 ----
-  if (!env.PROXY_KEY) {
-    return jsonError(503, 'proxy not configured');
-  }
-  const key = request.headers.get('x-proxy-key') || url.searchParams.get('key');
-  if (!key || key !== env.PROXY_KEY) {
-    return jsonError(401, 'not allowed');
-  }
 
   // ---- Upstream request headers / 构造上游请求头 ----
   const headers = new Headers();

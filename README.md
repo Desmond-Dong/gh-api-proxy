@@ -18,8 +18,6 @@ https://<your-domain>/https://raw.githubusercontent.com/owner/repo/main/file.txt
 
 - `User-Agent` must contain `HomeAssistantMarketplace`
   请求头 `User-Agent` 必须包含 `HomeAssistantMarketplace`
-- Provide the access key via the `x-proxy-key` header or a `?key=` query parameter
-  通过 `x-proxy-key` 请求头或 `?key=` 参数携带访问密钥
 - Only `github.com` and its subdomains are allowed
   仅允许 `github.com` 及其子域
 
@@ -29,7 +27,9 @@ https://<your-domain>/https://raw.githubusercontent.com/owner/repo/main/file.txt
    在 EdgeOne Makers 连接本仓库，加速区域选「全球可用区（含中国大陆）」
 2. Leave the build command empty; output directory: `public`
    构建命令留空，输出目录 `public`
-3. Environment variable: `PROXY_KEY` (access key)
-   环境变量：`PROXY_KEY`（访问密钥）
+3. Branches: `main` → production, `dev` → preview
+   分支：`main` 对应生产环境，`dev` 对应预览环境
 4. Bind an ICP-filed custom domain
    绑定已备案的自定义域名
+
+No environment variables required / 无需配置任何环境变量
