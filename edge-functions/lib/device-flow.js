@@ -72,9 +72,11 @@ export async function startDeviceFlow(request, env) {
   if (!clientId || !clientSecret) {
     return err(503, 'service unavailable');
   }
-  // Referer must be our own share page / 仅允许自家共享页调用
-  const referer = request.headers.get('referer') || '';
-  if (!/\/share\/?$/.test(new URL(referer || 'https://x.invalid/share/').pathname)) {
+  // Same-origin check via EdgeOne-injected host headers (browsers may strip referer;
+  // never rely on client-controlled headers for authorization).
+  // 同源校验走 EdgeOne 注入的 host 头（浏览器可能剥 referer；授权判定不依赖客户端可控的头）。
+  const selfHost = (request.headers.get('x-forwarded-host') || request.headers.get('host') || '').toLowerCase();
+  if (!selfHost) {
     return err(403, 'not allowed');
   }
 
@@ -131,8 +133,8 @@ export async function pollDeviceFlow(request, env) {
   if (!clientId || !clientSecret) {
     return err(503, 'service unavailable');
   }
-  const referer = request.headers.get('referer') || '';
-  if (!/\/share\/?$/.test(new URL(referer || 'https://x.invalid/share/').pathname)) {
+  const selfHost = (request.headers.get('x-forwarded-host') || request.headers.get('host') || '').toLowerCase();
+  if (!selfHost) {
     return err(403, 'not allowed');
   }
   const body = await readJsonBody(request);
