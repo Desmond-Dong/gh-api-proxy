@@ -45,6 +45,7 @@ const STRIP_REQ_HEADERS = new Set([
 // 逐跳头 + 平台注入的响应头，不透传给客户端
 const STRIP_RES_HEADERS = new Set([
   'connection', 'transfer-encoding', 'content-encoding', 'content-length',
+  'content-type',
 ]);
 
 // Uniform JSON error; details are deliberately vague to avoid leaking proxy internals
@@ -143,6 +144,12 @@ export async function onRequest(context) {
     if (!STRIP_RES_HEADERS.has(k.toLowerCase())) {
       resHeaders.set(k, v);
     }
+  }
+  // We stripped content-encoding (edge re-compresses); set a safe content-type by status.
+  // Body was decoded by fetch, so no binary/charset mismatch can leak through.
+  // content-type 已随 content-encoding 一并剥离（fetch 已解压 body），按状态码重置，避免边缘对解码后的 body 误判
+  if (!resHeaders.has('content-type')) {
+    resHeaders.set('content-type', upstream.status < 400 ? 'application/octet-stream' : 'text/plain');
   }
   withCors(resHeaders);
 
