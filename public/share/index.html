@@ -28,12 +28,13 @@
   .status { margin-top: 12px; font-size: 14px; color: #57606a; min-height: 20px; }
   .hint { margin-top: 10px; font-size: 13px; color: #57606a; line-height: 1.8; text-align: left; }
   .back { display: inline-block; margin-bottom: 16px; color: #0969da; text-decoration: none; font-size: 14px; }
+  .back .step-en { display: block; font-size: 12px; color: #8b949e; margin-top: 2px; }
   a { color: #0969da; text-decoration: none; }
 </style>
 </head>
 <body>
 <div class="card">
-  <a class="back" href="/">← 返回首页 / Home</a>
+  <a class="back" href="/">← 返回首页<span class="step-en">Back to Home</span></a>
   <div class="icon">🤝</div>
   <h1>共享你的 GitHub Token<span class="en">Share Your GitHub Token</span></h1>
   <p>通过 GitHub 官方授权（Device Flow）一键把 Token 加入共享池，用于 Home Assistant Marketplace 的安装加速。</p>
@@ -62,7 +63,8 @@
   </div>
 
   <button id="shareBtn">一键共享<span class="btn-en">Share in One Click</span></button>
-  <div class="hint">代码有效期 15 分钟，过期请重新点击按钮获取新代码。<span class="step-en">The code is valid for 15 minutes. If it expires, click the button again for a new one.</span></div>
+  <div class="hint">代码有效期 15 分钟，过期请重新点击按钮获取新代码。</div>
+  <div class="hint step-en">The code is valid for 15 minutes. If it expires, click the button again for a new one.</div>
   <div class="step" id="codeStep">
     <div>第 1 步：复制此一次性代码（15 分钟内有效）</div>
     <div class="step-en">Step 1: Copy this one-time code (valid for 15 minutes)</div>
