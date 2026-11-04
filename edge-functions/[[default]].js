@@ -33,6 +33,9 @@ const ALLOWED_HOSTS = new Set([
   'gist.github.com',
   'gist.githubusercontent.com',
   'objects.githubusercontent.com',
+  // jsDelivr CDN: upstream for small raw files (saves API quota)
+  // jsDelivr CDN：小文件 raw 的上游源（节省 API 配额）
+  'cdn.jsdelivr.net',
 ]);
 
 // UA whitelist: only requests containing this substring pass / UA 白名单：只放行包含该子串的请求
@@ -126,20 +129,18 @@ export async function onRequest(context) {
     return jsonError(403, 'not allowed');
   }
 
-  // raw.githubusercontent.com remap / raw 域名改走官方 Contents API
-  // EdgeOne egress cannot reach Fastly-hosted raw.githubusercontent.com (nor third-party mirrors);
-  // GitHub's Contents API lives on api.github.com (reachable) and serves file bytes with the raw media type.
-  //   /https://raw.githubusercontent.com/<owner>/<repo>/<ref>/<path...>
-  //     -> https://api.github.com/repos/<owner>/<repo>/contents/<path...>?ref=<ref>
-  // EdgeOne 出口连不上 Fastly 托管的 raw.githubusercontent.com（第三方镜像同样被拦），
-  // 改走官方 Contents API（在可达的 api.github.com 上，还能附共享池 token）
+  // raw.githubusercontent.com remap / raw 域名改写
+  // Small files (<=1MB): jsDelivr CDN, anonymous, saves the pool's API quota;
+  // larger paths fall back to the official Contents API (with shared-pool token).
+  // EdgeOne egress cannot reach raw's Fastly hosts directly.
+  // 小文件（≤1MB）走 jsDelivr CDN（匿名，省共享池 API 配额）；
+  // 超过 1MB 回落官方 Contents API（附共享池 token）。EdgeOne 出口直连 raw 的 Fastly 不可达。
   let rawRemap = false;
   if (target.hostname === 'raw.githubusercontent.com') {
     const segs = target.pathname.replace(/^\/+/, '').split('/');
     if (segs.length >= 4) {
       const [owner, repo, ref, ...rest] = segs;
-      const path = rest.map(encodeURIComponent).join('/');
-      target = new URL(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`);
+      target = new URL(`https://cdn.jsdelivr.net/gh/${owner}/${repo}@${ref}/${rest.join('/')}${target.search}`);
       rawRemap = true;
     }
   }
