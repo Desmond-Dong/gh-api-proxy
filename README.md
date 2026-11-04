@@ -15,7 +15,7 @@ https://<your-domain>/https://raw.githubusercontent.com/owner/repo/main/file.txt
 ## How a request flows / Request pipeline
 
 ```
-Browser / HA Marketplace
+Home Assistant Marketplace
         │  GET https://<your-domain>/https://api.github.com/…
         ▼
 [1] Gatekeeping (no env vars involved)
@@ -58,7 +58,7 @@ Browser / HA Marketplace
 - **Download endpoints stay anonymous** (they don't consume the API quota):
   release downloads, source archives, and remapped raw files.
 - **`/share/device/*` endpoints** (token sharing page) talk to GitHub's OAuth Device
-  Flow on behalf of the browser; the issued token is validated via `/user` and stays
+  Flow on behalf of the visitor; the issued token is validated via `/user` and stays
   on the server side.
 
 ### Transparent pass-through vs. rewriting / 透传与改写

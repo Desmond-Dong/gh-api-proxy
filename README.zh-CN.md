@@ -15,7 +15,7 @@ https://<your-domain>/https://raw.githubusercontent.com/owner/repo/main/file.txt
 ## 请求流程 / 从请求到响应
 
 ```
-浏览器 / HA Marketplace
+Home Assistant Marketplace
         │  GET https://<域名>/https://api.github.com/…
         ▼
 [1] 门禁层（不涉及任何环境变量）
@@ -54,7 +54,7 @@ https://<your-domain>/https://raw.githubusercontent.com/owner/repo/main/file.txt
   token 只存在于边缘函数内存中（缓存 30 分钟；被拒立即作废，下个请求自动换新）。
   token 明文永不下发客户端、不写日志、不用于下载类端点。
 - **下载类端点保持匿名**（不消耗 API 配额）：release 下载、源码包、重映射后的 raw 文件。
-- **`/share/device/*` 端点**（token 共享页）代表浏览器与 GitHub OAuth Device Flow 通信；
+- **`/share/device/*` 端点**（token 共享页）代表页面访客与 GitHub OAuth Device Flow 通信；
   签发的 token 经 `/user` 验证后只留在服务端。
 
 ### 透传与改写的边界 / Pass-through vs. rewriting
