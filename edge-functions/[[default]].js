@@ -32,8 +32,6 @@ const ALLOWED_HOSTS = new Set([
   'gist.github.com',
   'gist.githubusercontent.com',
   'objects.githubusercontent.com',
-  // raw fallback mirror / raw 回源镜像
-  'gh-proxy.com',
 ]);
 
 // UA whitelist: only requests containing this substring pass / UA 白名单：只放行包含该子串的请求
@@ -109,11 +107,22 @@ export async function onRequest(context) {
     return jsonError(403, 'not allowed');
   }
 
-  // raw.githubusercontent.com remap / raw 域名透明改走镜像
-  // EdgeOne egress cannot reach Fastly-hosted raw.githubusercontent.com, so remap to gh-proxy.com mirror
-  // EdgeOne 出口连不上 Fastly 托管的 raw.githubusercontent.com，改走 gh-proxy.com 镜像
+  // raw.githubusercontent.com remap / raw 域名改走官方 Contents API
+  // EdgeOne egress cannot reach Fastly-hosted raw.githubusercontent.com (nor third-party mirrors);
+  // GitHub's Contents API lives on api.github.com (reachable) and serves file bytes with the raw media type.
+  //   /https://raw.githubusercontent.com/<owner>/<repo>/<ref>/<path...>
+  //     -> https://api.github.com/repos/<owner>/<repo>/contents/<path...>?ref=<ref>
+  // EdgeOne 出口连不上 Fastly 托管的 raw.githubusercontent.com（第三方镜像同样被拦），
+  // 改走官方 Contents API（在可达的 api.github.com 上，还能附共享池 token）
+  let rawRemap = false;
   if (target.hostname === 'raw.githubusercontent.com') {
-    target = new URL(`https://gh-proxy.com/${target.href}`);
+    const segs = target.pathname.replace(/^\/+/, '').split('/');
+    if (segs.length >= 4) {
+      const [owner, repo, ref, ...rest] = segs;
+      const path = rest.map(encodeURIComponent).join('/');
+      target = new URL(`https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`);
+      rawRemap = true;
+    }
   }
   // Never forward proxy-internal params upstream / 代理内部参数不透传给上游
   target.searchParams.delete('key');
@@ -129,7 +138,9 @@ export async function onRequest(context) {
 
   const isApi = target.hostname === 'api.github.com';
   if (isApi) {
-    headers.set('Accept', request.headers.get('accept') || 'application/vnd.github+json');
+    // raw remap → Contents API: request the raw media type to get file bytes, not JSON metadata
+    // raw 重映射 → Contents API：用 raw 媒体类型拿文件本体而非 JSON 元数据
+    headers.set('Accept', rawRemap ? 'application/vnd.github.raw' : (request.headers.get('accept') || 'application/vnd.github+json'));
     // API uses the shared token pool (download endpoints don't consume API quota)
     // API 走共享池 token（下载类端点不占 API 配额）
     const token = await getGithubToken();
