@@ -19,10 +19,10 @@ import { getGithubToken, invalidateGithubToken } from './lib/github-token.js';
 
 // Upstream hosts allowed through the proxy / 允许代理的上游域名
 // NOTE: raw.githubusercontent.com (Fastly 185.199.x) is unreachable from EdgeOne egress,
-// so /https://raw.githubusercontent.com/... URLs are transparently remapped to jsDelivr
-// (same file content; branch/tag maps to @version).
+// so /https://raw.githubusercontent.com/... URLs are transparently remapped to the official
+// Contents API on api.github.com (reachable; raw media type returns file bytes).
 // 注：EdgeOne 出口连不上 Fastly 托管的 raw.githubusercontent.com，
-// raw 路径自动改走 jsDelivr 镜像（同文件内容；分支/标签映射为 @版本）
+// raw 路径自动改走 api.github.com 上的官方 Contents API（可达；raw 媒体类型返回文件本体）
 const ALLOWED_HOSTS = new Set([
   'api.github.com',
   'github.com',
@@ -39,10 +39,10 @@ const ALLOWED_UA_SUBSTRING = 'HomeAssistantMarketplace';
 
 // Hop-by-hop and proxy-internal request headers, not forwarded upstream
 // 逐跳头 + 代理自身头，不透传给上游
-// NOTE: do NOT manually set Host on the upstream fetch — the runtime derives it from
-// the URL; overriding it breaks TLS SNI/routing on some upstream hosts (raw.githubusercontent.com
-// failed with 502 when Host was forced). / 不要手动覆盖 Host：运行时按 URL 自动派生，
-// 强制设置会导致部分上游（raw.githubusercontent.com）SNI/路由异常返回 502
+// NOTE: the upstream fetch MUST carry an explicit Host header — the EdgeOne runtime routes
+// by Host instead of deriving it from the URL; omitting it fails every upstream request (site-wide 502).
+// 注：上游 fetch 必须显式带 Host 头——EdgeOne 运行时按 Host 路由而非从 URL 派生，
+// 缺失会导致所有上游请求失败（全站 502）
 const STRIP_REQ_HEADERS = new Set([
   'host', 'connection', 'content-length', 'transfer-encoding',
   'accept-encoding', 'x-forwarded-for',
@@ -134,6 +134,10 @@ export async function onRequest(context) {
       headers.set(k, v);
     }
   }
+  // EdgeOne runtime routes the upstream fetch by the Host header (not derived from the URL);
+  // without it every upstream request fails (site-wide 502). / EdgeOne 运行时按 Host 头路由上游
+  // 请求（不会从 URL 派生），缺 Host 会导致所有上游请求失败（全站 502）
+  headers.set('Host', target.host);
   headers.set('User-Agent', ua); // already whitelist-approved, forward as-is / 已过白名单，直接透传
 
   const isApi = target.hostname === 'api.github.com';
