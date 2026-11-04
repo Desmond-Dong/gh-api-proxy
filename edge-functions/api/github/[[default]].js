@@ -1,6 +1,8 @@
 // GitHub API 反向代理 — EdgeOne Pages Edge Function
 // 路由: /api/github/<path> -> https://api.github.com/<path>
 // 鉴权: x-proxy-key 请求头 或 ?key= 查询参数（不透传给 GitHub）
+// GitHub token: 优先 HACS China 共享池（内存缓存 30min），兑底环境变量 GH_TOKEN
+import { getGithubToken, invalidateGithubToken } from '../lib/github-token.js';
 
 const UPSTREAM = 'https://api.github.com';
 
@@ -81,11 +83,12 @@ export async function onRequest(context) {
     }
   }
   headers.set('Host', 'api.github.com');
-  // User-Agent 透传客户端原始值；GitHub 强制要求 UA，客户端未携带时用中性兜底
+  // User-Agent 透传客户端原始值（已通过白名单校验）；GitHub 强制要求 UA，兜底中性值
   headers.set('User-Agent', request.headers.get('user-agent') || 'gh-api-proxy');
   headers.set('Accept', request.headers.get('accept') || 'application/vnd.github+json');
-  if (env.GH_TOKEN) {
-    headers.set('Authorization', `Bearer ${env.GH_TOKEN}`);
+  const token = await getGithubToken(env);
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
   }
 
   let upstream;
@@ -98,6 +101,11 @@ export async function onRequest(context) {
     });
   } catch (e) {
     return jsonError(502, 'upstream fetch failed');
+  }
+
+  // 共享 token 撞 401/403（额度尽/被吊销）时清缓存，下个请求重新从池里拉
+  if (upstream.status === 401 || upstream.status === 403) {
+    invalidateGithubToken();
   }
 
   const resHeaders = new Headers();
