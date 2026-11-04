@@ -168,23 +168,49 @@ export async function onRequest(context) {
     }
   }
 
+  // ---- Upstream fetch with allowlisted redirect following / 带白名单校验的重定向跟随 ----
+  // redirect:'manual' + per-hop ALLOWED_HOSTS check: GitHub 302s releases to its objects CDN,
+  // but a hostile Location to a non-allowlisted host is rejected instead of followed blindly
+  // (defense-in-depth against SSRF via any future open redirect on GitHub domains).
+  // redirect:'manual' + 每跳校验 ALLOWED_HOSTS：GitHub 会把 release 302 到自家 objects CDN，
+  // 但若 Location 指向白名单外域名则拒绝跟随，不再盲跟（防 GitHub 域未来出现开放重定向导致的 SSRF）。
+  async function fetchUpstream(target, headers, method, body) {
+    let current = target;
+    for (let hop = 0; hop < 5; hop++) {
+      // EdgeOne routes by the Host header: re-point it at every hop or the redirected
+      // fetch lands on the previous host (site-wide failure). / EdgeOne 按 Host 头路由：
+      // 每跳都要把 Host 改指当前目标，否则重定向请求会打到上一个主机（全站失败）。
+      headers.set('Host', current.host);
+      const res = await fetch(current, {
+        method,
+        headers,
+        body: ['GET', 'HEAD'].includes(method) ? undefined : body,
+        redirect: 'manual',
+      });
+      if (res.status < 300 || res.status >= 400) return res;
+      const loc = res.headers.get('location');
+      if (!loc) return res;
+      let next;
+      try {
+        next = new URL(loc, current);
+      } catch (e) {
+        return jsonError(502, 'upstream error');
+      }
+      if (!ALLOWED_HOSTS.has(next.hostname)) {
+        return jsonError(403, 'not allowed');
+      }
+      current = next;
+    }
+    return jsonError(502, 'upstream error');
+  }
+
   let upstream;
   try {
-    upstream = await fetch(target, {
-      method: request.method,
-      headers,
-      body: ['GET', 'HEAD'].includes(request.method) ? undefined : request.body,
-      redirect: 'follow', // release assets 302 to objects.githubusercontent.com / release 资产 302 到 objects.githubusercontent.com
-    });
+    upstream = await fetchUpstream(target, headers, request.method, request.body);
   } catch (e) {
     // Single retry for transient upstream failures / 单次重试应对上游偶发失败
     try {
-      upstream = await fetch(target, {
-        method: request.method,
-        headers,
-        body: ['GET', 'HEAD'].includes(request.method) ? undefined : request.body,
-        redirect: 'follow',
-      });
+      upstream = await fetchUpstream(target, headers, request.method, request.body);
     } catch (e2) {
       return jsonError(502, 'upstream error');
     }

@@ -131,8 +131,10 @@ export async function onRequestGet() {
     }
   }
 
-  // Fallback: proxy a tokenhub record verbatim (already the same shape).
-  // 回退：原样转发 tokenhub 记录（结构本就一致）。
+  // Fallback: proxy a tokenhub record verbatim (already the same shape), but strip
+  // third-party usage metadata (contains tokenhub's user_ip — never forward other
+  // services' access logs). / 回退：转发 tokenhub 记录（结构一致），但剥除 usage 元数据
+  // （内含 tokenhub 侧 user_ip——绝不转发第三方服务的访问日志）。
   try {
     const res = await fetch(TOKENHUB_API, {
       headers: { 'User-Agent': 'HomeAssistantMarketplace' },
@@ -140,7 +142,22 @@ export async function onRequestGet() {
     if (res.ok) {
       const data = await res.json();
       if (data && data.data && data.data.token) {
-        return json(200, { data: data.data });
+        const d = data.data;
+        const clean = {
+          id: d.id,
+          created_at: d.created_at,
+          updated_at: d.updated_at,
+          type: d.type,
+          login: d.login,
+          token: d.token,
+          use_count: d.use_count,
+          remaining: d.remaining,
+          expired_at: d.expired_at || '',
+          deleted_at: null,
+          usage: null,
+          usages: null,
+        };
+        return json(200, { data: clean });
       }
     }
   } catch (e) { /* tokenhub unreachable / tokenhub 不可达 */ }

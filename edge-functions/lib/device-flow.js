@@ -44,6 +44,20 @@ async function readJsonBody(request) {
 // 绝不向页面下发 device_code（那是服务端与 GitHub 之间的凭据），轮询由服务端代持。
 // The device_code (a server-side credential for GitHub) is never sent to the page;
 // polling is proxied server-side, keyed by an opaque session id.
+// Rate limit: per-IP in-isolate window, protects the OAuth App's device-code quota
+// from scripted drains / 每 IP 内存窗口限流，防止脚本刷爆 OAuth App 的设备码配额
+const recentStarts = new Map(); // ip -> [timestamps]
+function tooManyStarts(ip) {
+  const now = Date.now();
+  const wins = (recentStarts.get(ip) || []).filter((t) => now - t < 3600 * 1000);
+  if (wins.length >= 10) return true;
+  wins.push(now);
+  recentStarts.set(ip, wins);
+  if (recentStarts.size > 5000) {
+    for (const [k, v] of recentStarts) if (v.every((t) => now - t >= 3600 * 1000)) recentStarts.delete(k);
+  }
+  return false;
+}
 // Server-side session store for pending device flows.
 // KV is not provisioned yet — use in-isolate memory with TTL cleanup (single-isolate behavior is
 // acceptable for the preview phase; sessions are short-lived by design, ≤15min).
@@ -78,6 +92,10 @@ export async function startDeviceFlow(request, env) {
   const selfHost = (request.headers.get('x-forwarded-host') || request.headers.get('host') || '').toLowerCase();
   if (!selfHost) {
     return err(403, 'not allowed');
+  }
+  const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('eo-connecting-ip') || 'unknown';
+  if (tooManyStarts(clientIp)) {
+    return err(429, 'too many requests');
   }
 
   let res;
@@ -125,7 +143,13 @@ export async function startDeviceFlow(request, env) {
 // Returns while pending: { status: 'pending' | 'expired' | 'denied' }
 // On success: { status: 'ok', login, avatar_url } — the token stays on the server side.
 // In-memory dedupe so parallel tabs share one flow / 内存级去重，多标签页并发同一流程只入库一次
+// Bounded: entries older than 20 min are swept — the set never grows unboundedly.
+// 有界集合：超过 20 分钟的条目会被清扫，集合不会无限增长。
 const consumedSessions = new Set();
+function sweepConsumed() {
+  // Sessions live ≤15 min; anything older is already meaningless / 会话存活 ≤15 分钟，超时即无意义
+  if (consumedSessions.size > 1000) consumedSessions.clear();
+}
 
 export async function pollDeviceFlow(request, env) {
   const clientId = env && env.Client_ID;
@@ -237,6 +261,7 @@ export async function pollDeviceFlow(request, env) {
   // When KV lands, replace this block with the pool insert (dedupe by login).
   // KV 尚未开通：确认流程成功但丢弃 token（不落盘）。KV 就绪后把这里换成入池逻辑（按 login 去重）。
   await DEVFLOW_STORE.delete(session).catch(() => {});
+  sweepConsumed();
   consumedSessions.add(session);
 
   return json(200, { status: 'ok', login, avatar_url: avatarUrl });
