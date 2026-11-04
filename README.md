@@ -29,6 +29,7 @@ No environment variables required.
 ## Roadmap
 
 - [ ] Migrate the shared GitHub token pool from the external tokenhub to an EdgeOne Pages KV pool hosted in this project (visitors can voluntarily share tokens on the page; the page shows only masked stats — login / use count / remaining quota; raw tokens never leave the edge)
+- [ ] One-click token sharing via GitHub OAuth Device Flow: visitors click a button on the page, authorize a zero-scope OAuth App at github.com/login/device, and their token joins the pool automatically (no token ever touches the browser; per-visitor independent device codes; dead tokens auto-pruned via periodic revalidation)
 - [ ] Admin endpoints `export` / `import` (AdminKey auth) for KV backup & restore
 
 ## README

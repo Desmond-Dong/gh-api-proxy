@@ -29,6 +29,7 @@ https://<your-domain>/https://raw.githubusercontent.com/owner/repo/main/file.txt
 ## 规划
 
 - [ ] 将共享 GitHub token 池从外部 tokenhub 迁移到本项目自建的 EdgeOne Pages KV 池（页面访客可自愿分享 token；页面仅展示脱敏统计——账号名 / 使用次数 / 剩余额度；token 明文不出边缘节点）
+- [ ] GitHub OAuth Device Flow 一键分享 token：访客点击页面按钮，在 github.com/login/device 授权一个零 scope 的 OAuth App，token 自动入池（token 不经过浏览器；每位访客独立设备码；失效 token 定期验活自动剔除）
 - [ ] 管理端点 `export` / `import`（AdminKey 鉴权），用于 KV 备份与恢复
 
 ## README
