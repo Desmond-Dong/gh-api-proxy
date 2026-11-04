@@ -33,3 +33,10 @@ https://<your-domain>/https://raw.githubusercontent.com/owner/repo/main/file.txt
    绑定已备案的自定义域名
 
 No environment variables required / 无需配置任何环境变量
+
+## Roadmap / 规划
+
+- [ ] Migrate the shared GitHub token pool from the external tokenhub to an EdgeOne Pages KV pool hosted in this project (visitors can voluntarily share tokens on the page; the page shows only masked stats — login / use count / remaining quota; raw tokens never leave the edge)
+  将共享 GitHub token 池从外部 tokenhub 迁移到本项目自建的 EdgeOne Pages KV 池（页面访客可自愿分享 token；页面仅展示脱敏统计——账号名 / 使用次数 / 剩余额度；token 明文不出边缘节点）
+- [ ] Admin endpoints `export` / `import` (AdminKey auth) for KV backup & restore
+  管理端点 `export` / `import`（AdminKey 鉴权）用于 KV 备份与恢复
