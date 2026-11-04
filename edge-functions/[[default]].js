@@ -34,6 +34,10 @@ const ALLOWED_UA_SUBSTRING = 'HomeAssistantMarketplace';
 
 // Hop-by-hop and proxy-internal request headers, not forwarded upstream
 // 逐跳头 + 代理自身头，不透传给上游
+// NOTE: do NOT manually set Host on the upstream fetch — the runtime derives it from
+// the URL; overriding it breaks TLS SNI/routing on some upstream hosts (raw.githubusercontent.com
+// failed with 502 when Host was forced). / 不要手动覆盖 Host：运行时按 URL 自动派生，
+// 强制设置会导致部分上游（raw.githubusercontent.com）SNI/路由异常返回 502
 const STRIP_REQ_HEADERS = new Set([
   'host', 'connection', 'content-length', 'transfer-encoding',
   'accept-encoding', 'x-forwarded-for',
@@ -107,7 +111,6 @@ export async function onRequest(context) {
       headers.set(k, v);
     }
   }
-  headers.set('Host', target.host);
   headers.set('User-Agent', ua); // already whitelist-approved, forward as-is / 已过白名单，直接透传
 
   const isApi = target.hostname === 'api.github.com';
