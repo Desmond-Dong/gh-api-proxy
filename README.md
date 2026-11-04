@@ -12,6 +12,67 @@ https://<your-domain>/https://github.com/owner/repo/releases/download/v1.0.0/ass
 https://<your-domain>/https://raw.githubusercontent.com/owner/repo/main/file.txt
 ```
 
+## How a request flows / Request pipeline
+
+```
+Browser / HA Marketplace
+        │  GET https://<your-domain>/https://api.github.com/…
+        ▼
+[1] Gatekeeping (no env vars involved)
+    ├─ User-Agent must contain "HomeAssistantMarketplace"  → 403 otherwise
+    └─ Target host must be in the GitHub allowlist         → 403 otherwise
+        ▼
+[2] URL normalization & remapping
+    ├─ Collapsed scheme repaired:  https:/ → https://
+    └─ raw.githubusercontent.com/<o>/<r>/<ref>/<path>
+         is transparently remapped to the official Contents API
+         api.github.com/repos/<o>/<r>/contents/<path>?ref=<ref>
+         with Accept: application/vnd.github.raw (returns file bytes, not JSON)
+        ▼
+[3] Upstream request assembly
+    ├─ Explicit Host header set to the target host (the EdgeOne runtime
+    │   routes by Host; omitting it fails every upstream call)
+    ├─ Hop-by-hop headers and client "authorization" stripped
+    └─ fetch() with redirect: follow; body is streamed through
+        ▼
+[4] Upstream: GitHub official hosts only (allowlist)
+    ├─ api.github.com        — API calls; a shared-pool token is attached here
+    ├─ github.com            — pages & release downloads (302 → objects CDN, anonymous)
+    ├─ codeload.github.com   — source archives (anonymous)
+    └─ objects.githubusercontent.com — release asset CDN (anonymous)
+        ▼
+[5] Response back to the client
+    ├─ Status code is passed through unchanged (GitHub's 404 stays 404)
+    ├─ Hop-by-hop headers stripped; Range requests supported (206)
+    └─ Body streamed — function CPU does not scale with file size
+```
+
+### Where the shared token is used / Token usage
+
+- **`api.github.com` requests only.** A token drawn from the shared pool is attached as
+  `Authorization: Bearer <token>` to lift the rate limit from 60 to 5,000 requests/hour.
+  The token lives only inside the edge function's memory (30-minute cache; a rejected
+  token is dropped immediately and the next request fetches a fresh one).
+  Raw tokens are never sent to the client, never logged, and never used for download
+  endpoints.
+- **Download endpoints stay anonymous** (they don't consume the API quota):
+  release downloads, source archives, and remapped raw files.
+- **`/share/device/*` endpoints** (token sharing page) talk to GitHub's OAuth Device
+  Flow on behalf of the browser; the issued token is validated via `/user` and stays
+  on the server side.
+
+### Transparent pass-through vs. rewriting / 透传与改写
+
+| Aspect | Behavior |
+|---|---|
+| URL path | Proxy-style prefix; the inner GitHub URL is parsed, then either passed through as-is (allowlist hosts) or remapped (raw → Contents API) |
+| Method | Passed through unchanged |
+| Query string | Passed through (the outer request's search rides on the inner URL) |
+| Request body | Streamed through unchanged |
+| Response status | Passed through unchanged |
+| Response headers | Hop-by-hop stripped; CORS added; the rest passed through |
+| Response body | Streamed through, byte-for-byte |
+
 ## Requirements
 
 - `User-Agent` must contain `HomeAssistantMarketplace`
@@ -21,10 +82,11 @@ https://<your-domain>/https://raw.githubusercontent.com/owner/repo/main/file.txt
 
 1. Connect this repository to EdgeOne Makers, acceleration region: "Global (including Chinese mainland)"
 2. Leave the build command empty; output directory: `public`
-3. Branches: `main` → production, `dev` → preview
+3. Branches: `main` → production (auto-build on push), `dev` → preview (manual build)
 4. Bind an ICP-filed custom domain
 
-No environment variables required.
+No proxy-related environment variables are required. The token-sharing endpoints read
+`Client_ID` / `Client_Secret` (OAuth App for the Device Flow) when enabled.
 
 ## Roadmap
 
