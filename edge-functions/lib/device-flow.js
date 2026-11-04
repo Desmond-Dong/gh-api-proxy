@@ -77,7 +77,7 @@ export async function startDeviceFlow(request, env) {
   // 同源校验走 EdgeOne 注入的 host 头（浏览器可能剥 referer；授权判定不依赖客户端可控的头）。
   const selfHost = (request.headers.get('x-forwarded-host') || request.headers.get('host') || '').toLowerCase();
   if (!selfHost) {
-    return json(403, { error: 'not allowed', debug_host: selfHost || '(empty)', debug_xfh: request.headers.get('x-forwarded-host'), debug_h: request.headers.get('host') });
+    return err(403, 'not allowed');
   }
 
   let res;
@@ -135,7 +135,7 @@ export async function pollDeviceFlow(request, env) {
   }
   const selfHost = (request.headers.get('x-forwarded-host') || request.headers.get('host') || '').toLowerCase();
   if (!selfHost) {
-    return json(403, { error: 'not allowed', debug_host: selfHost || '(empty)', debug_xfh: request.headers.get('x-forwarded-host'), debug_h: request.headers.get('host') });
+    return err(403, 'not allowed');
   }
   const body = await readJsonBody(request);
   const session = typeof body.session === 'string' ? body.session : '';
