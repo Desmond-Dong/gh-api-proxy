@@ -32,7 +32,8 @@ const ALLOWED_HOSTS = new Set([
   'gist.github.com',
   'gist.githubusercontent.com',
   'objects.githubusercontent.com',
-  'cdn.jsdelivr.net',
+  // raw fallback mirror / raw 回源镜像
+  'gh-proxy.com',
 ]);
 
 // UA whitelist: only requests containing this substring pass / UA 白名单：只放行包含该子串的请求
@@ -108,15 +109,11 @@ export async function onRequest(context) {
     return jsonError(403, 'not allowed');
   }
 
-  // raw.githubusercontent.com remap / raw 域名透明改走 jsDelivr
-  // /https://raw.githubusercontent.com/<user>/<repo>/<branch|tag>/<path...>
-  //   -> https://cdn.jsdelivr.net/gh/<user>/<repo>@<branch|tag>/<path...>
+  // raw.githubusercontent.com remap / raw 域名透明改走镜像
+  // EdgeOne egress cannot reach Fastly-hosted raw.githubusercontent.com, so remap to gh-proxy.com mirror
+  // EdgeOne 出口连不上 Fastly 托管的 raw.githubusercontent.com，改走 gh-proxy.com 镜像
   if (target.hostname === 'raw.githubusercontent.com') {
-    const segs = target.pathname.replace(/^\/+/, '').split('/');
-    if (segs.length >= 3) {
-      const [user, repo, ref, ...rest] = segs;
-      target = new URL(`https://cdn.jsdelivr.net/gh/${user}/${repo}@${ref}/${rest.join('/')}${target.search}`);
-    }
+    target = new URL(`https://gh-proxy.com/${target.href}`);
   }
   // Never forward proxy-internal params upstream / 代理内部参数不透传给上游
   target.searchParams.delete('key');
