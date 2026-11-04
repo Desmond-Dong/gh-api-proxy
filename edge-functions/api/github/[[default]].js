@@ -59,15 +59,15 @@ export async function onRequest(context) {
   if (!env.PROXY_KEY) {
     return jsonError(503, 'proxy not configured: PROXY_KEY env missing');
   }
-  const key = request.headers.get('x-proxy-key') || url.searchParams.get('key');
-  if (!key || key !== env.PROXY_KEY) {
-    return jsonError(401, 'unauthorized');
-  }
 
-  // ---- 目标路径 ----
+  // ---- 目标路径（先解析，后验 key，保证错误语义不受顺序影响）----
   const path = Array.isArray(params.default) ? params.default.join('/') : (params.default || '');
   if (!path) {
     return jsonError(400, 'empty path');
+  }
+  const key = request.headers.get('x-proxy-key') || url.searchParams.get('key');
+  if (!key || key !== env.PROXY_KEY) {
+    return jsonError(401, 'unauthorized');
   }
   // key 不透传给 GitHub
   const search = new URLSearchParams(url.search);
