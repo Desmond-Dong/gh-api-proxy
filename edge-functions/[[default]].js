@@ -38,6 +38,26 @@ const ALLOWED_HOSTS = new Set([
 // UA whitelist: only requests containing this substring pass / UA 白名单：只放行包含该子串的请求
 const ALLOWED_UA_SUBSTRING = 'HomeAssistantMarketplace';
 
+// Per-IP rate limit for the proxy path / 代理主链路的每 IP 限流
+// Sliding 1h window, 600 req/IP: an HA Marketplace install pulls a handful of API calls
+// plus one archive per update; 600/h is far above any real client but caps scripted
+// abuse from burning the shared token pool. / 滑动 1 小时窗口，每 IP 600 次：正常
+// Marketplace 安装只有少量 API 调用加一次归档下载，600 远高于真实客户端，足以拦脚本刷量
+const RATE_LIMIT_WINDOW_MS = 3600 * 1000;
+const RATE_LIMIT_MAX = 600;
+const rateBuckets = new Map(); // ip -> [timestamps]
+function rateLimited(ip) {
+  const now = Date.now();
+  const wins = (rateBuckets.get(ip) || []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  if (wins.length >= RATE_LIMIT_MAX) return true;
+  wins.push(now);
+  rateBuckets.set(ip, wins);
+  if (rateBuckets.size > 10000) {
+    for (const [k, v] of rateBuckets) if (v.every((t) => now - t >= RATE_LIMIT_WINDOW_MS)) rateBuckets.delete(k);
+  }
+  return false;
+}
+
 // Hop-by-hop and proxy-internal request headers, not forwarded upstream
 // 逐跳头 + 代理自身头，不透传给上游
 // NOTE: the upstream fetch MUST carry an explicit Host header — the EdgeOne runtime routes
@@ -109,6 +129,12 @@ export async function onRequest(context) {
   const ua = request.headers.get('user-agent') || '';
   if (!ua.includes(ALLOWED_UA_SUBSTRING)) {
     return jsonError(403, 'not allowed');
+  }
+
+  // Per-IP rate limit / 每 IP 限流（UA 门禁之后，只限通过门禁的代理请求）
+  const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('eo-connecting-ip') || 'unknown';
+  if (rateLimited(clientIp)) {
+    return jsonError(429, 'too many requests');
   }
 
   // ---- Target URL / 解析目标 URL: /https://github.com/... ----
