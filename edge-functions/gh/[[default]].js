@@ -22,6 +22,9 @@ const STRIP_REQ_HEADERS = new Set([
   'x-real-ip', 'eo-connecting-ip',
 ]);
 
+// UA 白名单：只放行包含该子串的请求
+const ALLOWED_UA_SUBSTRING = 'HomeAssistantMarketplace';
+
 const STRIP_RES_HEADERS = new Set([
   'connection', 'transfer-encoding', 'content-encoding', 'content-length',
 ]);
@@ -50,6 +53,12 @@ export async function onRequest(context) {
 
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: withCors(new Headers()) });
+  }
+
+  // UA 白名单：必须包含 HomeAssistantMarketplace
+  const ua = request.headers.get('user-agent') || '';
+  if (!ua.includes(ALLOWED_UA_SUBSTRING)) {
+    return jsonError(403, 'user-agent not allowed');
   }
 
   if (!env.PROXY_KEY) {

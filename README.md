@@ -2,8 +2,14 @@
 
 EdgeOne Pages (Makers) Edge Function：GitHub API + 资源下载反向代理。
 
-部署在 EdgeOne Pages，用于前端/脚本在国内直连访问 GitHub。
+部署在 EdgeOne Pages，用于 Home Assistant Marketplace 集成在国内直连访问 GitHub。
 走腾讯 EdgeOne 大陆节点，出站请求 GitHub（杭州移动家宽实测 API 200 / 0.7~2.3s）。
+
+## 访问控制
+
+- **UA 白名单**：请求头 `User-Agent` 必须包含 `HomeAssistantMarketplace`，否则 403
+- **密钥**：需携带 `x-proxy-key` 请求头或 `?key=` 参数，与 `PROXY_KEY` 环境变量匹配，否则 401
+- key 自身不透传给上游；OPTIONS 预检放行
 
 ## 部署（EdgeOne Makers 控制台）
 
@@ -30,25 +36,36 @@ EdgeOne Pages (Makers) Edge Function：GitHub API + 资源下载反向代理。
 
 ```bash
 export P="x-proxy-key: $PROXY_KEY"
+export U="user-agent: HomeAssistantMarketplace"
 export D="https://<your-domain>"
 
 # API：查询 rate_limit（应显示认证后额度）
-curl "$D/api/github/rate_limit" -H "$P"
+curl "$D/api/github/rate_limit" -H "$P" -H "$U"
 
 # release 最新版本信息
-curl "$D/api/github/repos/home-assistant/core/releases/latest" -H "$P"
+curl "$D/api/github/repos/home-assistant/core/releases/latest" -H "$P" -H "$U"
 
 # 下载某个 release 资产（跟随 302 到 CDN）
-curl -LO "$D/gh/dl/home-assistant/core/releases/download/2026.10.0/home-assistant-2026.10.0.zip" -H "$P"
+curl -LO "$D/gh/dl/user/repo/releases/download/v1.0.0/asset.zip" -H "$P" -H "$U"
 
 # 仓库单文件
-curl "$D/gh/raw/user/repo/main/README.md" -H "$P"
+curl "$D/gh/raw/user/repo/main/manifest.json" -H "$P" -H "$U"
 
 # 源码包
-curl -o repo.tar.gz "$D/gh/archive/user/repo/tar.gz/refs/heads/main" -H "$P"
+curl -o repo.tar.gz "$D/gh/archive/user/repo/tar.gz/refs/heads/main" -H "$P" -H "$U"
 ```
 
-鉴权方式二选一：`x-proxy-key` 请求头，或 URL 追加 `?key=...`（key 自身不透传给上游）。
+HA 集成侧配置示例（Python requests）：
+
+```python
+headers = {
+    "user-agent": "HomeAssistantMarketplace",
+    "x-proxy-key": PROXY_KEY,
+}
+r = await hass.async_add_executor_job(
+    requests.get, f"https://<your-domain>/api/github/repos/{owner}/{repo}/releases/latest", None, headers
+)
+```
 
 ## 代码结构
 
