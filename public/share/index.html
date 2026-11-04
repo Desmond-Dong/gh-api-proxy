@@ -58,7 +58,7 @@
     </ul>
   </div>
 
-  <button id="shareBtn" disabled title="功能建设中 / Coming soon">一键共享 / Share in One Click</button>
+  <button id="shareBtn">一键共享 / Share in One Click</button>
   <div class="step" id="codeStep">
     <div>第 1 步：复制此一次性代码 / Step 1: Copy this one-time code</div>
     <div class="code" id="deviceCode">····-····</div>
@@ -69,10 +69,63 @@
 </div>
 
 <script>
-// 功能建设中占位：Device Flow 需要 OAuth App 与 KV 就绪后接入
-// Placeholder: Device Flow wiring lands once the OAuth App and KV are provisioned
+// Device Flow wiring: start -> show code -> server-side poll -> success shows masked profile
+// Device Flow 接线：发起 -> 显示码 -> 服务端轮询 -> 成功后展示脱敏档案
 const btn = document.getElementById('shareBtn');
-btn.disabled = true;
+const codeStep = document.getElementById('codeStep');
+const codeEl = document.getElementById('deviceCode');
+const pollEl = document.getElementById('pollStatus');
+const finalEl = document.getElementById('finalStatus');
+let session = null;
+let timer = null;
+
+btn.addEventListener('click', async () => {
+  btn.disabled = true;
+  finalEl.textContent = '';
+  try {
+    const r = await fetch('/share/device/start', { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'start failed');
+    session = d.session;
+    codeEl.textContent = d.user_code;
+    codeStep.style.display = 'block';
+    codeEl.onclick = () => navigator.clipboard && navigator.clipboard.writeText(d.user_code);
+    let interval = (d.interval || 5) * 1000;
+    timer = setInterval(poll, interval);
+  } catch (e) {
+    finalEl.className = 'status err';
+    finalEl.textContent = '发起失败，请稍后重试 / Failed to start, try again later';
+    btn.disabled = false;
+  }
+});
+
+async function poll() {
+  if (!session) return;
+  try {
+    const r = await fetch('/share/device/poll', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ session }),
+    });
+    const d = await r.json();
+    if (d.slow_down) clearInterval(timer), (timer = setInterval(poll, 10000));
+    if (d.status === 'pending') return;
+    clearInterval(timer);
+    if (d.status === 'ok') {
+      codeStep.style.display = 'none';
+      finalEl.className = 'status ok';
+      finalEl.textContent = (d.reused ? '已完成 ✓ ' : '感谢分享 ✓ ') + (d.login ? 'GitHub: ' + d.login : '');
+    } else if (d.status === 'expired') {
+      finalEl.className = 'status err';
+      finalEl.textContent = '码已过期，请重新发起 / Code expired, please start again';
+      btn.disabled = false;
+    } else if (d.status === 'denied') {
+      finalEl.className = 'status err';
+      finalEl.textContent = '你拒绝了授权 / Authorization denied';
+      btn.disabled = false;
+    }
+  } catch (e) { /* transient: keep polling / 偶发错误继续轮询 */ }
+}
 </script>
 </body>
 </html>

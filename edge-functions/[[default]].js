@@ -16,6 +16,7 @@
 // 下载流式转发（不缓冲），支持 Range 断点续传；不声明 accept-encoding。
 
 import { getGithubToken, invalidateGithubToken } from './lib/github-token.js';
+import { startDeviceFlow, pollDeviceFlow } from './lib/device-flow.js';
 
 // Upstream hosts allowed through the proxy / 允许代理的上游域名
 // NOTE: raw.githubusercontent.com (Fastly 185.199.x) is unreachable from EdgeOne egress,
@@ -84,6 +85,24 @@ export async function onRequest(context) {
 
   if (request.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: withCors(new Headers()) });
+  }
+
+  // Token-sharing Device Flow endpoints (before the UA gate: they are browser-facing pages' APIs,
+  // guarded by same-origin referer checks inside the handlers)
+  // Token 共享的 Device Flow 端点（放在 UA 门禁之前：这是给浏览器页面用的 API，
+  // 由 handler 内部的同源 referer 校验保护）
+  if (url.pathname === '/share/device/start' && request.method === 'POST') {
+    return startDeviceFlow(request, env);
+  }
+  if (url.pathname === '/share/device/poll' && request.method === 'POST') {
+    return pollDeviceFlow(request, env);
+  }
+
+  // Non-proxy paths that look like pages should fall through to static assets
+  // (the catch-all below only handles /https://... prefixed proxy requests)
+  // 看起来是页面的非代理路径继续走静态资源（下方 catch-all 只处理 /https://… 前缀的代理请求）
+  if (!/^https?:/i.test(url.pathname.slice(1))) {
+    return context.next();
   }
 
   // UA whitelist check / UA 白名单校验
