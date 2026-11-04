@@ -156,19 +156,15 @@ export async function onRequest(context) {
       headers,
       body: ['GET', 'HEAD'].includes(request.method) ? undefined : request.body,
       redirect: 'follow', // release assets 302 to objects.githubusercontent.com / release 资产 302 到 objects.githubusercontent.com
-      signal: AbortSignal.timeout(25000), // platform's default short connect timeout trips on fastly-hosted raw.githubusercontent.com; retry once
-      // 平台默认连接超时较短，对 Fastly 托管的 raw.githubusercontent.com 会过早失败；显式放宽 + 单次重试
     });
   } catch (e) {
-    // Single retry: fastly POP selection can fail transiently from some egress regions
-    // 单次重试：部分地区出口对 Fastly POP 选择偶发失败
+    // Single retry for transient upstream failures / 单次重试应对上游偶发失败
     try {
       upstream = await fetch(target, {
         method: request.method,
         headers,
         body: ['GET', 'HEAD'].includes(request.method) ? undefined : request.body,
         redirect: 'follow',
-        signal: AbortSignal.timeout(25000),
       });
     } catch (e2) {
       return jsonError(502, 'upstream error');
