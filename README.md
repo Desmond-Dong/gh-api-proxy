@@ -25,9 +25,11 @@ Home Assistant Marketplace
 [2] URL normalization & remapping
     ├─ Collapsed scheme repaired:  https:/ → https://
     └─ raw.githubusercontent.com/<o>/<r>/<ref>/<path>
-         is transparently remapped to the jsDelivr CDN:
-         cdn.jsdelivr.net/gh/<o>/<r>@<ref>/<path>
-         (anonymous, does not consume the API quota)
+         is transparently remapped to the official Contents API
+         api.github.com/repos/<o>/<r>/contents/<path>?ref=<ref>
+         with Accept: application/vnd.github.raw (file bytes, not JSON).
+         (jsDelivr was evaluated as an anonymous alternative but EdgeOne
+         egress cannot reach it either — verified 2026-11-05.)
         ▼
 [3] Upstream request assembly
     ├─ Explicit Host header set to the target host (the EdgeOne runtime
@@ -40,7 +42,7 @@ Home Assistant Marketplace
     ├─ github.com            — pages & release downloads (302 → objects CDN, anonymous)
     ├─ codeload.github.com   — source archives (anonymous)
     ├─ objects.githubusercontent.com — release asset CDN (anonymous)
-    └─ cdn.jsdelivr.net      — CDN for remapped raw files (anonymous)
+    └─ (cdn.jsdelivr.net evaluated and rejected: unreachable from EdgeOne egress)
         ▼
 [5] Response back to the client
     ├─ Status code is passed through unchanged (GitHub's 404 stays 404)
