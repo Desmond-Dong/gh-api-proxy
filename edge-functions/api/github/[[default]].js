@@ -72,7 +72,8 @@ export async function onRequest(context) {
     }
   }
   headers.set('Host', 'api.github.com');
-  headers.set('User-Agent', 'hasscn-gh-proxy');
+  // User-Agent 透传客户端原始值；GitHub 强制要求 UA，客户端未携带时用中性兜底
+  headers.set('User-Agent', request.headers.get('user-agent') || 'gh-api-proxy');
   headers.set('Accept', request.headers.get('accept') || 'application/vnd.github+json');
   if (env.GH_TOKEN) {
     headers.set('Authorization', `Bearer ${env.GH_TOKEN}`);
