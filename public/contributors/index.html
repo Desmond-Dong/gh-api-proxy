@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>贡献者 / Contributors — Home Assistant Marketplace</title>
+<title>贡献者 — Home Assistant Marketplace</title>
 <style>
   body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f6f8fa; margin: 0; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; color: #24292f; }
   .card { background: #fff; border: 1px solid #d0d7de; border-radius: 12px; padding: 40px; max-width: 640px; margin: 40px 24px; width: 100%; }
   .icon { font-size: 40px; }
   h1 { font-size: 20px; margin: 12px 0 8px; }
-  p.desc { color: #57606a; line-height: 1.7; margin: 6px 0 20px; font-size: 14px; }
+  p.desc { color: #57606a; line-height: 1.9; margin: 6px 0 20px; font-size: 14px; }
   table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th, td { padding: 10px 12px; border-bottom: 1px solid #eaeef2; text-align: left; }
   th { color: #57606a; font-weight: 600; font-size: 13px; background: #f6f8fa; }
@@ -18,28 +18,30 @@
   .pill { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; background: #e7f2e8; color: #1a7f37; }
   .pill.low { background: #fff1e5; color: #bc4c00; }
   .back { display: inline-block; margin-bottom: 16px; color: #0969da; text-decoration: none; font-size: 14px; }
+  .lang { float: right; font-size: 13px; }
+  .lang a { color: #0969da; text-decoration: none; }
 </style>
 </head>
 <body>
 <div class="card">
-  <a class="back" href="/">← 返回首页 / Home</a>
+  <a class="back" href="/">← 返回首页</a>
+  <span class="lang"><a href="en.html">English</a></span>
   <div class="icon">💖</div>
-  <h1>Token 贡献者 / Contributors</h1>
+  <h1>Token 贡献者</h1>
   <p class="desc">
-    感谢所有向共享池贡献 GitHub Token 的朋友。此页面展示脱敏统计（账号名 / 使用次数 / 剩余额度），Token 明文永不展示。
-    Thanks to everyone sharing a GitHub token with the pool. Only masked stats are shown; raw tokens are never displayed.
+    感谢所有向共享池贡献 GitHub Token 的朋友。<br>
+    此页面展示脱敏统计（账号名 / 使用次数 / 剩余额度），Token 明文永不展示。
   </p>
   <table id="tbl">
     <thead>
-      <tr><th>账号 / Login</th><th>使用次数 / Uses</th><th>剩余额度 / Remaining</th><th>状态 / Status</th></tr>
+      <tr><th>账号</th><th>使用次数</th><th>剩余额度</th><th>状态</th></tr>
     </thead>
     <tbody>
-      <tr><td colspan="4" class="muted">共享池功能建设中，数据即将上线 / Pool coming soon</td></tr>
+      <tr><td colspan="4" class="muted">共享池功能建设中，数据即将上线</td></tr>
     </tbody>
   </table>
   <p class="desc" style="margin-top:18px">
-    想加入？前往 <a href="/share/" style="color:#0969da">共享 Token / Share Token</a> 页面，一键授权即可。
-    Want to join? Visit <a href="/share/" style="color:#0969da">Share Token</a> to contribute in one click.
+    想加入？前往 <a href="/share/">共享 Token</a> 页面，一键授权即可。
   </p>
 </div>
 </body>

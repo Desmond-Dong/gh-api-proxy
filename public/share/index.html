@@ -3,67 +3,62 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>共享 Token / Share Token — Home Assistant Marketplace</title>
+<title>共享 Token — Home Assistant Marketplace</title>
 <style>
   body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f6f8fa; margin: 0; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; color: #24292f; }
   .card { background: #fff; border: 1px solid #d0d7de; border-radius: 12px; padding: 40px; max-width: 640px; margin: 40px 24px; width: 100%; }
   .icon { font-size: 40px; }
   h1 { font-size: 20px; margin: 12px 0 8px; }
-  p { color: #57606a; line-height: 1.8; margin: 8px 0; font-size: 14px; }
+  p { color: #57606a; line-height: 1.9; margin: 10px 0; font-size: 14px; }
   .privacy { background: #fff8e6; border: 1px solid #eac54f; border-radius: 10px; padding: 18px 20px; margin: 20px 0; font-size: 14px; }
-  .privacy h2 { font-size: 15px; margin: 0 0 10px; color: #7d5a00; }
+  .privacy h2 { font-size: 15px; margin: 0 0 12px; color: #7d5a00; }
   .privacy ul { margin: 8px 0; padding-left: 20px; }
-  .privacy li { margin: 4px 0; line-height: 1.7; }
-  code { background: #f6f8fa; border: 1px solid #d0d7de; border-radius: 4px; padding: 1px 6px; font-size: 13px; }
+  .privacy li { margin: 6px 0; line-height: 1.8; }
   button { width: 100%; padding: 12px; font-size: 15px; border: 0; border-radius: 8px; background: #1a7f37; color: #fff; cursor: pointer; margin-top: 8px; }
   button:hover { background: #146c2e; }
   button:disabled { background: #8b949e; cursor: not-allowed; }
   .step { margin: 14px 0; padding: 14px 16px; border: 1px dashed #d0d7de; border-radius: 8px; display: none; font-size: 14px; }
   .step .code { font-size: 26px; font-weight: 700; letter-spacing: 3px; color: #0969da; margin: 6px 0; }
   .status { margin-top: 12px; font-size: 14px; color: #57606a; min-height: 20px; }
-  .ok { color: #1a7f37; }
-  .err { color: #cf222e; }
   .back { display: inline-block; margin-bottom: 16px; color: #0969da; text-decoration: none; font-size: 14px; }
+  .lang { float: right; font-size: 13px; }
+  .lang a { color: #0969da; text-decoration: none; }
   a { color: #0969da; text-decoration: none; }
 </style>
 </head>
 <body>
 <div class="card">
-  <a class="back" href="/">← 返回首页 / Home</a>
+  <a class="back" href="/">← 返回首页</a>
+  <span class="lang"><a href="en.html">English</a></span>
   <div class="icon">🤝</div>
-  <h1>共享你的 GitHub Token / Share Your GitHub Token</h1>
+  <h1>共享你的 GitHub Token</h1>
   <p>
-    通过 GitHub 官方授权（Device Flow）一键把 Token 加入共享池，用于 Home Assistant Marketplace 的安装加速。
-    One-click share via GitHub's official Device Flow. Your token powers the Home Assistant Marketplace acceleration.
+    通过 GitHub 官方授权（Device Flow）一键把 Token 加入共享池，<br>
+    用于 Home Assistant Marketplace 的安装加速。
   </p>
 
   <div class="privacy">
-    <h2>🔒 数据获取与使用声明 / Data Disclosure</h2>
+    <h2>🔒 数据获取与使用声明</h2>
     <ul>
-      <li><b>获取什么 / What we receive：</b>仅 GitHub 授权产生的 Token（<b>零权限 / zero scope</b>，无法读取你的任何仓库、无法写入、无法读取私人数据）以及你的 GitHub 账号公开用户名（login）。
-        Only the token GitHub issues to this site (with <b>zero scope</b> — it cannot read or write any of your repositories or data) and your public GitHub username.</li>
-      <li><b>如何使用 / How it is used：</b>Token 仅存于本站服务端（腾讯 EdgeOne 边缘节点），用于在他人通过本站安装 Marketplace 资源时消耗其每小时 API 额度，让你贡献的额度帮助其他用户。
-        Stored server-side only (Tencent EdgeOne edge nodes) and used solely to serve other users' Marketplace requests within GitHub's hourly API quota.</li>
-      <li><b>不会做什么 / What we never do：</b>不在页面显示 Token 明文；不用于任何其他服务；不与第三方共享；不记录与你身份相关的访问日志。
-        Never displayed in full on any page, never used for anything else, never shared with third parties, no identity-linked access logs.</li>
-      <li><b>随时退出 / Revoke anytime：</b>前往 <a href="https://github.com/settings/security" target="_blank">GitHub → Settings → Security → Applications</a> 取消授权即可，你的 Token 会立即失效，我们会在定期验活时自动将其移出共享池。
-        Revoke at GitHub → Settings → Security → Applications. The token dies instantly and is pruned from the pool automatically during periodic revalidation.</li>
+      <li><b>获取什么：</b>仅 GitHub 授权产生的 Token（<b>零权限 / zero scope</b>，无法读取你的任何仓库、无法写入、无法读取私人数据），以及你的 GitHub 账号公开用户名（login）。</li>
+      <li><b>如何使用：</b>Token 仅存于本站服务端（腾讯 EdgeOne 边缘节点），用于在他人通过本站安装 Marketplace 资源时消耗其每小时 API 额度，让你贡献的额度帮助其他用户。</li>
+      <li><b>不会做什么：</b>不在页面显示 Token 明文；不用于任何其他服务；不与第三方共享；不记录与你身份相关的访问日志。</li>
+      <li><b>随时退出：</b>前往 <a href="https://github.com/settings/security" target="_blank">GitHub → Settings → Security → Applications</a> 取消授权即可。你的 Token 会立即失效，我们会在定期验活时自动将其移出共享池。</li>
     </ul>
   </div>
 
-  <button id="shareBtn" disabled title="功能建设中 / Coming soon">一键共享 / Share in One Click</button>
+  <button id="shareBtn" disabled title="功能建设中">一键共享</button>
   <div class="step" id="codeStep">
-    <div>第 1 步：复制此代码 / Step 1: Copy this one-time code</div>
+    <div>第 1 步：复制此一次性代码</div>
     <div class="code" id="deviceCode">····-····</div>
-    <div>第 2 步：打开 <a href="https://github.com/login/device" target="_blank" rel="noopener">github.com/login/device</a> 并粘贴代码完成授权 / Step 2: Open the link and enter the code to authorize</div>
-    <div id="pollStatus" class="status">等待授权中… / Waiting for authorization…</div>
+    <div>第 2 步：打开 <a href="https://github.com/login/device" target="_blank" rel="noopener">github.com/login/device</a> 粘贴代码完成授权</div>
+    <div id="pollStatus" class="status">等待授权中…</div>
   </div>
   <div class="status" id="finalStatus"></div>
 </div>
 
 <script>
 // 功能建设中占位：Device Flow 需要 OAuth App 与 KV 就绪后接入
-// Placeholder page: Device Flow wiring lands once the OAuth App and KV are provisioned
 const btn = document.getElementById('shareBtn');
 btn.disabled = true;
 </script>

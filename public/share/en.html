@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Share Token — Home Assistant Marketplace</title>
+<style>
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f6f8fa; margin: 0; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; color: #24292f; }
+  .card { background: #fff; border: 1px solid #d0d7de; border-radius: 12px; padding: 40px; max-width: 640px; margin: 40px 24px; width: 100%; }
+  .icon { font-size: 40px; }
+  h1 { font-size: 20px; margin: 12px 0 8px; }
+  p { color: #57606a; line-height: 1.9; margin: 10px 0; font-size: 14px; }
+  .privacy { background: #fff8e6; border: 1px solid #eac54f; border-radius: 10px; padding: 18px 20px; margin: 20px 0; font-size: 14px; }
+  .privacy h2 { font-size: 15px; margin: 0 0 12px; color: #7d5a00; }
+  .privacy ul { margin: 8px 0; padding-left: 20px; }
+  .privacy li { margin: 6px 0; line-height: 1.8; }
+  button { width: 100%; padding: 12px; font-size: 15px; border: 0; border-radius: 8px; background: #1a7f37; color: #fff; cursor: pointer; margin-top: 8px; }
+  button:hover { background: #146c2e; }
+  button:disabled { background: #8b949e; cursor: not-allowed; }
+  .step { margin: 14px 0; padding: 14px 16px; border: 1px dashed #d0d7de; border-radius: 8px; display: none; font-size: 14px; }
+  .step .code { font-size: 26px; font-weight: 700; letter-spacing: 3px; color: #0969da; margin: 6px 0; }
+  .status { margin-top: 12px; font-size: 14px; color: #57606a; min-height: 20px; }
+  .back { display: inline-block; margin-bottom: 16px; color: #0969da; text-decoration: none; font-size: 14px; }
+  .lang { float: right; font-size: 13px; }
+  .lang a { color: #0969da; text-decoration: none; }
+  a { color: #0969da; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="card">
+  <a class="back" href="/">← Home</a>
+  <span class="lang"><a href="index.html">中文</a></span>
+  <div class="icon">🤝</div>
+  <h1>Share Your GitHub Token</h1>
+  <p>
+    Add your token to the shared pool in one click via GitHub's official Device Flow authorization.<br>
+    It powers the Home Assistant Marketplace acceleration for everyone.
+  </p>
+
+  <div class="privacy">
+    <h2>🔒 Data Disclosure</h2>
+    <ul>
+      <li><b>What we receive:</b> only the token GitHub issues to this site through your authorization (<b>zero scope</b> — it cannot read or write any of your repositories or data), plus your public GitHub username (login).</li>
+      <li><b>How it is used:</b> the token is stored server-side only (Tencent EdgeOne edge nodes) and used solely to serve other users' Marketplace requests within GitHub's hourly API quota.</li>
+      <li><b>What we never do:</b> never display the full token on any page; never use it for anything else; never share it with third parties; no identity-linked access logs.</li>
+      <li><b>Revoke anytime:</b> visit <a href="https://github.com/settings/security" target="_blank">GitHub → Settings → Security → Applications</a> and revoke this site. The token dies instantly and is pruned from the pool automatically during periodic revalidation.</li>
+    </ul>
+  </div>
+
+  <button id="shareBtn" disabled title="Coming soon">Share in One Click</button>
+  <div class="step" id="codeStep">
+    <div>Step 1: copy this one-time code</div>
+    <div class="code" id="deviceCode">····-····</div>
+    <div>Step 2: open <a href="https://github.com/login/device" target="_blank" rel="noopener">github.com/login/device</a>, paste the code and authorize</div>
+    <div id="pollStatus" class="status">Waiting for authorization…</div>
+  </div>
+  <div class="status" id="finalStatus"></div>
+</div>
+
+<script>
+// Placeholder: Device Flow wiring lands once the OAuth App and KV are provisioned
+const btn = document.getElementById('shareBtn');
+btn.disabled = true;
+</script>
+</body>
+</html>
