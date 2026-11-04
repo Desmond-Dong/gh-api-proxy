@@ -25,9 +25,9 @@ Home Assistant Marketplace
 [2] URL 归一化与重映射
     ├─ 修复折叠的协议头：https:/ → https://
     └─ raw.githubusercontent.com/<o>/<r>/<ref>/<path>
-         被透明重映射到官方 Contents API：
-         api.github.com/repos/<o>/<r>/contents/<path>?ref=<ref>
-         并附 Accept: application/vnd.github.raw（返回文件本体而非 JSON）
+         被透明重映射到 jsDelivr CDN：
+         cdn.jsdelivr.net/gh/<o>/<r>@<ref>/<path>
+         （匿名，不消耗 API 配额）
         ▼
 [3] 组装上游请求
     ├─ 显式设置 Host 头为目标域名（EdgeOne 运行时按 Host 路由，
@@ -39,7 +39,8 @@ Home Assistant Marketplace
     ├─ api.github.com        — API 调用；此处附加共享池 token
     ├─ github.com            — 页面与 release 下载（302 → objects CDN，匿名）
     ├─ codeload.github.com   — 源码包（匿名）
-    └─ objects.githubusercontent.com — release 资产 CDN（匿名）
+    ├─ objects.githubusercontent.com — release 资产 CDN（匿名）
+    └─ cdn.jsdelivr.net      — 重映射 raw 文件的 CDN（匿名）
         ▼
 [5] 响应回传客户端
     ├─ 状态码原样透传（GitHub 的 404 就是 404）
@@ -53,11 +54,8 @@ Home Assistant Marketplace
   `Authorization: Bearer <token>` 附加，把限额从 60 次/时提升到 5,000 次/时。
   token 只存在于边缘函数内存中（缓存 30 分钟；被拒立即作废，下个请求自动换新）。
   token 明文永不下发客户端、不写日志、不用于下载类端点。
-- **下载类端点对公开仓库保持匿名**（不消耗 API 配额）：release 下载、源码包、objects CDN。
-- **关于重映射 raw 的说明**：raw.githubusercontent.com 本身对公开仓库是匿名下载，
-  但本代理把 raw 请求重映射到了 Contents API（api.github.com），因此这类请求
-  会消耗共享池的认证 API 配额。直连 raw 在本代理中本就不可用
-  （EdgeOne 出口连不上 raw 的 Fastly 节点）。
+- **其余全部匿名**（均不消耗 API 配额）：release 下载、源码包、objects CDN，
+  以及重映射后的 raw 文件（由 jsDelivr CDN 提供）。
 - **`/share/device/*` 端点**（token 共享页）代表页面访客与 GitHub OAuth Device Flow 通信；
   签发的 token 经 `/user` 验证后只留在服务端。
 

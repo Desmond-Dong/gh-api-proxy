@@ -25,9 +25,9 @@ Home Assistant Marketplace
 [2] URL normalization & remapping
     ├─ Collapsed scheme repaired:  https:/ → https://
     └─ raw.githubusercontent.com/<o>/<r>/<ref>/<path>
-         is transparently remapped to the official Contents API
-         api.github.com/repos/<o>/<r>/contents/<path>?ref=<ref>
-         with Accept: application/vnd.github.raw (returns file bytes, not JSON)
+         is transparently remapped to the jsDelivr CDN:
+         cdn.jsdelivr.net/gh/<o>/<r>@<ref>/<path>
+         (anonymous, does not consume the API quota)
         ▼
 [3] Upstream request assembly
     ├─ Explicit Host header set to the target host (the EdgeOne runtime
@@ -39,7 +39,8 @@ Home Assistant Marketplace
     ├─ api.github.com        — API calls; a shared-pool token is attached here
     ├─ github.com            — pages & release downloads (302 → objects CDN, anonymous)
     ├─ codeload.github.com   — source archives (anonymous)
-    └─ objects.githubusercontent.com — release asset CDN (anonymous)
+    ├─ objects.githubusercontent.com — release asset CDN (anonymous)
+    └─ cdn.jsdelivr.net      — CDN for remapped raw files (anonymous)
         ▼
 [5] Response back to the client
     ├─ Status code is passed through unchanged (GitHub's 404 stays 404)
