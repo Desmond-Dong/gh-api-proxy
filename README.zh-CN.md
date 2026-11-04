@@ -53,7 +53,11 @@ Home Assistant Marketplace
   `Authorization: Bearer <token>` 附加，把限额从 60 次/时提升到 5,000 次/时。
   token 只存在于边缘函数内存中（缓存 30 分钟；被拒立即作废，下个请求自动换新）。
   token 明文永不下发客户端、不写日志、不用于下载类端点。
-- **下载类端点保持匿名**（不消耗 API 配额）：release 下载、源码包、重映射后的 raw 文件。
+- **下载类端点对公开仓库保持匿名**（不消耗 API 配额）：release 下载、源码包、objects CDN。
+- **关于重映射 raw 的说明**：raw.githubusercontent.com 本身对公开仓库是匿名下载，
+  但本代理把 raw 请求重映射到了 Contents API（api.github.com），因此这类请求
+  会消耗共享池的认证 API 配额。直连 raw 在本代理中本就不可用
+  （EdgeOne 出口连不上 raw 的 Fastly 节点）。
 - **`/share/device/*` 端点**（token 共享页）代表页面访客与 GitHub OAuth Device Flow 通信；
   签发的 token 经 `/user` 验证后只留在服务端。
 

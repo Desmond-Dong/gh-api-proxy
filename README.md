@@ -55,8 +55,13 @@ Home Assistant Marketplace
   token is dropped immediately and the next request fetches a fresh one).
   Raw tokens are never sent to the client, never logged, and never used for download
   endpoints.
-- **Download endpoints stay anonymous** (they don't consume the API quota):
-  release downloads, source archives, and remapped raw files.
+- **Download endpoints stay anonymous for public repos** (they don't consume the
+  API quota): release downloads, source archives, and the objects CDN.
+- **Note on remapped raw files:** although raw.githubusercontent.com itself serves
+  anonymous downloads for public repos, this proxy remaps raw requests to the
+  Contents API (api.github.com), so those requests DO consume the shared pool's
+  authenticated API quota. Direct raw downloads through the proxy would fail anyway
+  (EdgeOne egress cannot reach raw's Fastly hosts).
 - **`/share/device/*` endpoints** (token sharing page) talk to GitHub's OAuth Device
   Flow on behalf of the visitor; the issued token is validated via `/user` and stays
   on the server side.
