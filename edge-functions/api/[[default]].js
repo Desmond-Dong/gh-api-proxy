@@ -1,7 +1,7 @@
 // GitHub API 反向代理 — EdgeOne Pages Edge Function
 // 路由: /api/github/<path> -> https://api.github.com/<path>
 // 鉴权: x-proxy-key 请求头 或 ?key= 查询参数（不透传给 GitHub）
-// GitHub token: 优先 HACS China 共享池（内存缓存 30min），兑底环境变量 GH_TOKEN
+// GitHub token: HACS China 共享池（内存缓存 30min），撞 401/403 自动换
 import { getGithubToken, invalidateGithubToken } from '../lib/github-token.js';
 
 const UPSTREAM = 'https://api.github.com';
@@ -52,27 +52,27 @@ export async function onRequest(context) {
   // UA 白名单：必须包含 HomeAssistantMarketplace
   const ua = request.headers.get('user-agent') || '';
   if (!ua.includes(ALLOWED_UA_SUBSTRING)) {
-    return jsonError(403, 'user-agent not allowed');
+    return jsonError(403, 'not allowed');
   }
 
   // ---- 鉴权 ----
   if (!env.PROXY_KEY) {
-    return jsonError(503, 'proxy not configured: PROXY_KEY env missing');
+    return jsonError(503, 'proxy not configured');
   }
 
   // ---- 目标路径（先解析，后验 key，保证错误语义不受顺序影响）----
   // 路由为 /api/[[default]]，需自行校验第一段必须是 github：/api/github/<path>
   const segments = Array.isArray(params.default) ? params.default : [params.default || ''];
   if (segments[0] !== 'github') {
-    return jsonError(404, 'unknown api scope: use /api/github/<path>');
+    return jsonError(404, 'not found');
   }
   const path = segments.slice(1).join('/');
   if (!path) {
-    return jsonError(400, 'empty path');
+    return jsonError(400, 'not found');
   }
   const key = request.headers.get('x-proxy-key') || url.searchParams.get('key');
   if (!key || key !== env.PROXY_KEY) {
-    return jsonError(401, 'unauthorized');
+    return jsonError(401, 'not allowed');
   }
   // key 不透传给 GitHub
   const search = new URLSearchParams(url.search);
@@ -91,7 +91,7 @@ export async function onRequest(context) {
   // User-Agent 透传客户端原始值（已通过白名单校验）；GitHub 强制要求 UA，兜底中性值
   headers.set('User-Agent', request.headers.get('user-agent') || 'gh-api-proxy');
   headers.set('Accept', request.headers.get('accept') || 'application/vnd.github+json');
-  const token = await getGithubToken(env);
+  const token = await getGithubToken();
   if (token) {
     headers.set('Authorization', `Bearer ${token}`);
   }

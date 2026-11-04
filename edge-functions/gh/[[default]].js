@@ -58,22 +58,22 @@ export async function onRequest(context) {
   // UA 白名单：必须包含 HomeAssistantMarketplace
   const ua = request.headers.get('user-agent') || '';
   if (!ua.includes(ALLOWED_UA_SUBSTRING)) {
-    return jsonError(403, 'user-agent not allowed');
+    return jsonError(403, 'not allowed');
   }
 
   if (!env.PROXY_KEY) {
-    return jsonError(503, 'proxy not configured: PROXY_KEY env missing');
+    return jsonError(503, 'proxy not configured');
   }
   const key = request.headers.get('x-proxy-key') || url.searchParams.get('key');
   if (!key || key !== env.PROXY_KEY) {
-    return jsonError(401, 'unauthorized');
+    return jsonError(401, 'not allowed');
   }
 
   const segments = Array.isArray(params.default) ? params.default : [params.default || ''];
   const [scope, ...rest] = segments;
   const upstreamBase = HOSTS[scope];
   if (!upstreamBase) {
-    return jsonError(404, `unknown scope: use /gh/raw|archive|dl|gist/<path>`);
+    return jsonError(404, 'not found');
   }
   const path = rest.join('/');
   if (!path) {
