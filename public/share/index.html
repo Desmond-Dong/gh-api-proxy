@@ -23,6 +23,8 @@
   button:disabled { background: #8b949e; cursor: not-allowed; }
   .step { margin: 14px 0; padding: 14px 16px; border: 1px dashed #d0d7de; border-radius: 8px; display: none; font-size: 14px; }
   .step .code { font-size: 26px; font-weight: 700; letter-spacing: 3px; color: #0969da; margin: 6px 0; }
+  .step-en { font-size: 12px; color: #8b949e; line-height: 1.6; margin-top: 2px; }
+  .btn-en { display: block; font-size: 12px; font-weight: 400; opacity: .85; margin-top: 2px; }
   .status { margin-top: 12px; font-size: 14px; color: #57606a; min-height: 20px; }
   .back { display: inline-block; margin-bottom: 16px; color: #0969da; text-decoration: none; font-size: 14px; }
   a { color: #0969da; text-decoration: none; }
@@ -58,12 +60,15 @@
     </ul>
   </div>
 
-  <button id="shareBtn">一键共享 / Share in One Click</button>
+  <button id="shareBtn">一键共享<span class="btn-en">Share in One Click</span></button>
   <div class="step" id="codeStep">
-    <div>第 1 步：复制此一次性代码 / Step 1: Copy this one-time code</div>
+    <div>第 1 步：复制此一次性代码</div>
+    <div class="step-en">Step 1: Copy this one-time code</div>
     <div class="code" id="deviceCode">····-····</div>
-    <div>第 2 步：打开 <a href="https://github.com/login/device" target="_blank" rel="noopener">github.com/login/device</a> 粘贴代码完成授权 / Step 2: Open the link, paste the code and authorize</div>
-    <div id="pollStatus" class="status">等待授权中… / Waiting for authorization…</div>
+    <div>第 2 步：打开 <a href="https://github.com/login/device" target="_blank" rel="noopener">github.com/login/device</a> 粘贴代码完成授权</div>
+    <div class="step-en">Step 2: Open the link above, paste the code and authorize</div>
+    <div id="pollStatus" class="status">等待授权中…</div>
+    <div class="step-en" id="pollStatusEn">Waiting for authorization…</div>
   </div>
   <div class="status" id="finalStatus"></div>
 </div>
@@ -75,9 +80,23 @@ const btn = document.getElementById('shareBtn');
 const codeStep = document.getElementById('codeStep');
 const codeEl = document.getElementById('deviceCode');
 const pollEl = document.getElementById('pollStatus');
+const pollEn = document.getElementById('pollStatusEn');
 const finalEl = document.getElementById('finalStatus');
 let session = null;
 let timer = null;
+let userCode = null;
+
+// 会话恢复：刷新页面后自动继续轮询，不再出现"发起失败"假象
+// Session restore: keep polling across page reloads instead of a false "failed to start"
+const saved = sessionStorage.getItem('df_session');
+if (saved) {
+  session = saved;
+  codeStep.style.display = 'block';
+  pollEl.textContent = '恢复会话中…';
+  pollEn.textContent = 'Resuming session…';
+  btn.disabled = true;
+  timer = setInterval(poll, 5000);
+}
 
 btn.addEventListener('click', async () => {
   btn.disabled = true;
@@ -87,6 +106,8 @@ btn.addEventListener('click', async () => {
     const d = await r.json();
     if (!r.ok) throw new Error(d.error || 'start failed');
     session = d.session;
+    userCode = d.user_code;
+    sessionStorage.setItem('df_session', session);
     codeEl.textContent = d.user_code;
     codeStep.style.display = 'block';
     codeEl.onclick = () => navigator.clipboard && navigator.clipboard.writeText(d.user_code);
@@ -94,7 +115,7 @@ btn.addEventListener('click', async () => {
     timer = setInterval(poll, interval);
   } catch (e) {
     finalEl.className = 'status err';
-    finalEl.textContent = '发起失败，请稍后重试 / Failed to start, try again later';
+    finalEl.innerHTML = '发起失败，请稍后重试<span class="step-en">Failed to start — please try again later</span>';
     btn.disabled = false;
   }
 });
@@ -109,19 +130,23 @@ async function poll() {
     });
     const d = await r.json();
     if (d.slow_down) clearInterval(timer), (timer = setInterval(poll, 10000));
-    if (d.status === 'pending') return;
+    if (d.status === 'pending') { pollEl.textContent = '等待授权中…'; pollEn.textContent = 'Waiting for authorization…'; return; }
     clearInterval(timer);
     if (d.status === 'ok') {
+      sessionStorage.removeItem('df_session');
       codeStep.style.display = 'none';
       finalEl.className = 'status ok';
-      finalEl.textContent = (d.reused ? '已完成 ✓ ' : '感谢分享 ✓ ') + (d.login ? 'GitHub: ' + d.login : '');
+      const zh = d.reused ? '已完成 ✓' : '感谢分享 ✓';
+      finalEl.innerHTML = zh + (d.login ? '<br>GitHub: ' + d.login : '') + '<span class="step-en">' + (d.reused ? 'Already done ✓' : 'Thanks for sharing ✓') + (d.login ? ' — GitHub: ' + d.login : '') + '</span>';
     } else if (d.status === 'expired') {
+      sessionStorage.removeItem('df_session');
       finalEl.className = 'status err';
-      finalEl.textContent = '码已过期，请重新发起 / Code expired, please start again';
+      finalEl.innerHTML = '码已过期，请重新发起<span class="step-en">Code expired — click the button to start again</span>';
       btn.disabled = false;
     } else if (d.status === 'denied') {
+      sessionStorage.removeItem('df_session');
       finalEl.className = 'status err';
-      finalEl.textContent = '你拒绝了授权 / Authorization denied';
+      finalEl.innerHTML = '你拒绝了授权<span class="step-en">Authorization denied</span>';
       btn.disabled = false;
     }
   } catch (e) { /* transient: keep polling / 偶发错误继续轮询 */ }
