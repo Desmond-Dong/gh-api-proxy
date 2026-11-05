@@ -4,35 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>共享 Token / Share Token — Home Assistant Marketplace</title>
-<style>
-  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f6f8fa; margin: 0; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; color: #24292f; }
-  .card { background: #fff; border: 1px solid #d0d7de; border-radius: 12px; padding: 40px; max-width: 640px; margin: 40px 24px; width: 100%; }
-  .icon { font-size: 40px; }
-  h1 { font-size: 20px; margin: 12px 0 4px; }
-  h1 .en { display: block; font-size: 14px; color: #8b949e; font-weight: 400; margin-top: 5px; }
-  p { color: #57606a; line-height: 1.9; margin: 14px 0 4px; font-size: 14px; }
-  p.en { color: #8b949e; font-size: 12.5px; line-height: 1.7; margin: 0 0 8px; }
-  .privacy { background: #fff8e6; border: 1px solid #eac54f; border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
-  .privacy h2 { font-size: 15px; margin: 0 0 4px; color: #7d5a00; }
-  .privacy h2 .en { display: block; font-size: 12px; color: #a8842c; font-weight: 400; margin-top: 4px; }
-  .privacy ul { margin: 12px 0 4px; padding-left: 20px; }
-  .privacy li { margin: 10px 0; line-height: 1.8; font-size: 14px; color: #57606a; }
-  .privacy li .en { display: block; font-size: 12px; color: #8b949e; line-height: 1.7; margin-top: 3px; }
-  button { width: 100%; padding: 12px; font-size: 15px; border: 0; border-radius: 8px; background: #1a7f37; color: #fff; cursor: pointer; margin-top: 8px; }
-  button:hover { background: #146c2e; }
-  button:disabled { background: #8b949e; cursor: not-allowed; }
-  .step { margin: 14px 0; padding: 14px 16px; border: 1px dashed #d0d7de; border-radius: 8px; display: none; font-size: 14px; }
-  .step .code { font-size: 26px; font-weight: 700; letter-spacing: 3px; color: #0969da; margin: 6px 0; }
-  .step-en { font-size: 12px; color: #8b949e; line-height: 1.6; margin-top: 2px; }
-  .btn-en { display: block; font-size: 12px; font-weight: 400; opacity: .85; margin-top: 2px; }
-  .status { margin-top: 12px; font-size: 14px; color: #57606a; min-height: 20px; }
-  .back { display: inline-block; margin-bottom: 16px; color: #0969da; text-decoration: none; font-size: 14px; }
-  a { color: #0969da; text-decoration: none; }
-</style>
+<link rel="stylesheet" href="/assets/site.css">
 </head>
 <body>
 <div class="card">
-  <a class="back" href="/">← 返回首页 / Home</a>
+  <a class="back" href="/">← 返回首页<span class="step-en">Back to Home</span></a>
   <div class="icon">🤝</div>
   <h1>共享你的 GitHub Token<span class="en">Share Your GitHub Token</span></h1>
   <p>通过 GitHub 官方授权（Device Flow）一键把 Token 加入共享池，用于 Home Assistant Marketplace 的安装加速。</p>
@@ -61,9 +37,11 @@
   </div>
 
   <button id="shareBtn">一键共享<span class="btn-en">Share in One Click</span></button>
+  <div class="hint">代码有效期 15 分钟，过期请重新点击按钮获取新代码。</div>
+  <div class="hint step-en">The code is valid for 15 minutes. If it expires, click the button again for a new one.</div>
   <div class="step" id="codeStep">
-    <div>第 1 步：复制此一次性代码</div>
-    <div class="step-en">Step 1: Copy this one-time code</div>
+    <div>第 1 步：复制此一次性代码（15 分钟内有效）</div>
+    <div class="step-en">Step 1: Copy this one-time code (valid for 15 minutes)</div>
     <div class="code" id="deviceCode">····-····</div>
     <div>第 2 步：打开 <a href="https://github.com/login/device" target="_blank" rel="noopener">github.com/login/device</a> 粘贴代码完成授权</div>
     <div class="step-en">Step 2: Open the link above, paste the code and authorize</div>
@@ -86,17 +64,21 @@ let session = null;
 let timer = null;
 let userCode = null;
 
-// 会话恢复：刷新页面后自动继续轮询，不再出现"发起失败"假象
-// Session restore: keep polling across page reloads instead of a false "failed to start"
-const saved = sessionStorage.getItem('df_session');
-if (saved) {
-  session = saved;
-  codeStep.style.display = 'block';
-  pollEl.textContent = '恢复会话中…';
-  pollEn.textContent = 'Resuming session…';
-  btn.disabled = true;
-  timer = setInterval(poll, 5000);
-}
+// 会话恢复：刷新页面后自动继续轮询
+// Session restore: keep polling across page reloads
+let resumed = false;
+try {
+  const saved = JSON.parse(localStorage.getItem('df_session') || 'null');
+  if (saved && saved.id && Date.now() - saved.at < 14 * 60 * 1000) {
+    session = saved.id;
+    resumed = true;
+    pollEl.textContent = '恢复会话中…';
+    pollEn.textContent = 'Resuming session…';
+    timer = setInterval(poll, 5000);
+  } else if (saved) {
+    localStorage.removeItem('df_session');
+  }
+} catch (e) { localStorage.removeItem('df_session'); }
 
 btn.addEventListener('click', async () => {
   btn.disabled = true;
@@ -107,15 +89,13 @@ btn.addEventListener('click', async () => {
     if (!r.ok) throw new Error(d.error || 'start failed');
     session = d.session;
     userCode = d.user_code;
-    sessionStorage.setItem('df_session', session);
+    localStorage.setItem('df_session', JSON.stringify({ id: session, at: Date.now() }));
     codeEl.textContent = d.user_code;
     codeStep.style.display = 'block';
     codeEl.onclick = () => navigator.clipboard && navigator.clipboard.writeText(d.user_code);
     let interval = (d.interval || 5) * 1000;
     timer = setInterval(poll, interval);
   } catch (e) {
-    finalEl.className = 'status err';
-    finalEl.innerHTML = '发起失败，请稍后重试<span class="step-en">Failed to start — please try again later</span>';
     btn.disabled = false;
   }
 });
@@ -133,20 +113,17 @@ async function poll() {
     if (d.status === 'pending') { pollEl.textContent = '等待授权中…'; pollEn.textContent = 'Waiting for authorization…'; return; }
     clearInterval(timer);
     if (d.status === 'ok') {
-      sessionStorage.removeItem('df_session');
+      localStorage.removeItem('df_session');
       codeStep.style.display = 'none';
       finalEl.className = 'status ok';
       const zh = d.reused ? '已完成 ✓' : '感谢分享 ✓';
       finalEl.innerHTML = zh + (d.login ? '<br>GitHub: ' + d.login : '') + '<span class="step-en">' + (d.reused ? 'Already done ✓' : 'Thanks for sharing ✓') + (d.login ? ' — GitHub: ' + d.login : '') + '</span>';
-    } else if (d.status === 'expired') {
-      sessionStorage.removeItem('df_session');
-      finalEl.className = 'status err';
-      finalEl.innerHTML = '码已过期，请重新发起<span class="step-en">Code expired — click the button to start again</span>';
-      btn.disabled = false;
-    } else if (d.status === 'denied') {
-      sessionStorage.removeItem('df_session');
-      finalEl.className = 'status err';
-      finalEl.innerHTML = '你拒绝了授权<span class="step-en">Authorization denied</span>';
+    } else {
+      // expired / denied 及其他终态: 静默清理, 只恢复按钮, 不显示错误文案
+      // expired / denied and any other terminal state: clean up silently, just re-enable
+      localStorage.removeItem('df_session');
+      codeStep.style.display = 'none';
+      resumed = false;
       btn.disabled = false;
     }
   } catch (e) { /* transient: keep polling / 偶发错误继续轮询 */ }

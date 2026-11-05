@@ -38,6 +38,58 @@ const ALLOWED_HOSTS = new Set([
 // UA whitelist: only requests containing this substring pass / UA 白名单：只放行包含该子串的请求
 const ALLOWED_UA_SUBSTRING = 'HomeAssistantMarketplace';
 
+// Blocked file extensions / 屏蔽的文件类型黑名单
+// The HA Marketplace only downloads repo archives (.zip), release assets named by
+// hacs.json, and source files (.js/.yaml/.json). Everything below is impossible in
+// that flow — requests for them are treated as storage-abuse and rejected.
+// Marketplace 只会下载仓库归档(.zip)、hacs.json 点名的 release 资产和源文件
+// (.js/.yaml/.json)。以下类型在该流程中不可能出现，出现即视为把代理当网盘用，拒绝。
+// NOTE: intentionally NOT blocked: .zip (repo archives & release assets are the
+// legitimate channel), .js/.yaml/.json (actual Marketplace content), small media
+// (png/svg/gif used by themes), .py (integration source inside archives only).
+// 注意：不拦 .zip（仓库归档与 release 资产是正当通道）、.js/.yaml/.json（Marketplace
+// 真实内容）、小体积图片（主题可能用 png/svg/gif）、.py（集成源码只在归档内）。
+const BLOCKED_EXTENSIONS = new Set([
+  // disk images & archives / 磁盘镜像与压缩包
+  '.iso', '.dmg', '.img', '.tar', '.7z', '.rar', '.bz2', '.xz',
+  // installers & packages / 安装包
+  '.apk', '.exe', '.msi', '.deb', '.rpm',
+  // video / 视频（不含 .ts——TypeScript 源码共用该扩展名，插件源码树可能包含）
+  '.mp4', '.mkv', '.avi', '.mov', '.webm', '.flv',
+  // heavy media & assets / 大体积媒体与资产
+  '.psd', '.ai', '.tiff',
+  // vm disks / 虚拟机磁盘
+  '.vmdk', '.qcow2',
+]);
+// True when the request path points at a single blocked file / 请求路径命中黑名单时返回 true
+function blockedFileRequest(pathname) {
+  const path = pathname.toLowerCase();
+  for (const ext of BLOCKED_EXTENSIONS) {
+    if (path.endsWith(ext)) return true;
+  }
+  return false;
+}
+
+// Per-IP rate limit for the proxy path / 代理主链路的每 IP 限流
+// Sliding 1h window, 600 req/IP: an HA Marketplace install pulls a handful of API calls
+// plus one archive per update; 600/h is far above any real client but caps scripted
+// abuse from burning the shared token pool. / 滑动 1 小时窗口，每 IP 600 次：正常
+// Marketplace 安装只有少量 API 调用加一次归档下载，600 远高于真实客户端，足以拦脚本刷量
+const RATE_LIMIT_WINDOW_MS = 3600 * 1000;
+const RATE_LIMIT_MAX = 600;
+const rateBuckets = new Map(); // ip -> [timestamps]
+function rateLimited(ip) {
+  const now = Date.now();
+  const wins = (rateBuckets.get(ip) || []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+  if (wins.length >= RATE_LIMIT_MAX) return true;
+  wins.push(now);
+  rateBuckets.set(ip, wins);
+  if (rateBuckets.size > 10000) {
+    for (const [k, v] of rateBuckets) if (v.every((t) => now - t >= RATE_LIMIT_WINDOW_MS)) rateBuckets.delete(k);
+  }
+  return false;
+}
+
 // Hop-by-hop and proxy-internal request headers, not forwarded upstream
 // 逐跳头 + 代理自身头，不透传给上游
 // NOTE: the upstream fetch MUST carry an explicit Host header — the EdgeOne runtime routes
@@ -111,6 +163,12 @@ export async function onRequest(context) {
     return jsonError(403, 'not allowed');
   }
 
+  // Per-IP rate limit / 每 IP 限流（UA 门禁之后，只限通过门禁的代理请求）
+  const clientIp = request.headers.get('x-forwarded-for') || request.headers.get('eo-connecting-ip') || 'unknown';
+  if (rateLimited(clientIp)) {
+    return jsonError(429, 'too many requests');
+  }
+
   // ---- Target URL / 解析目标 URL: /https://github.com/... ----
   // Some HTTP clients collapse "//" into "/" in the path; repair the scheme first
   // 部分 HTTP 客户端会把路径里的 // 折叠成 /，先修复 scheme
@@ -126,13 +184,19 @@ export async function onRequest(context) {
     return jsonError(403, 'not allowed');
   }
 
+  // Blocked file types / 黑名单文件类型拦截
+  // Applies to every path form: raw single files, API contents, GitHub blob paths and
+  // release assets. Repo/source archives end in .zip which is not on the list, so the
+  // legitimate Marketplace channel is unaffected.
+  // 覆盖所有路径形态：raw 单文件、API contents、GitHub blob 路径与 release 资产。
+  // 仓库归档是 .zip 不在名单里，Marketplace 正当通道不受影响。
+  if (blockedFileRequest(target.pathname)) {
+    return jsonError(403, 'not allowed');
+  }
+
   // raw.githubusercontent.com remap / raw 域名改走官方 Contents API
-  // EdgeOne egress cannot reach Fastly-hosted raw.githubusercontent.com (nor third-party mirrors);
-  // GitHub's Contents API lives on api.github.com (reachable) and serves file bytes with the raw media type.
-  //   /https://raw.githubusercontent.com/<owner>/<repo>/<ref>/<path...>
-  //     -> https://api.github.com/repos/<owner>/<repo>/contents/<path...>?ref=<ref>
-  // EdgeOne 出口连不上 Fastly 托管的 raw.githubusercontent.com（第三方镜像同样被拦），
-  // 改走官方 Contents API（在可达的 api.github.com 上，还能附共享池 token）
+  // Contents API lives on api.github.com (reachable) and serves file bytes with the raw media type.
+  // Contents API 在可达的 api.github.com 上，附共享池 token 返回文件本体。
   let rawRemap = false;
   if (target.hostname === 'raw.githubusercontent.com') {
     const segs = target.pathname.replace(/^\/+/, '').split('/');
@@ -172,23 +236,49 @@ export async function onRequest(context) {
     }
   }
 
+  // ---- Upstream fetch with allowlisted redirect following / 带白名单校验的重定向跟随 ----
+  // redirect:'manual' + per-hop ALLOWED_HOSTS check: GitHub 302s releases to its objects CDN,
+  // but a hostile Location to a non-allowlisted host is rejected instead of followed blindly
+  // (defense-in-depth against SSRF via any future open redirect on GitHub domains).
+  // redirect:'manual' + 每跳校验 ALLOWED_HOSTS：GitHub 会把 release 302 到自家 objects CDN，
+  // 但若 Location 指向白名单外域名则拒绝跟随，不再盲跟（防 GitHub 域未来出现开放重定向导致的 SSRF）。
+  async function fetchUpstream(target, headers, method, body) {
+    let current = target;
+    for (let hop = 0; hop < 5; hop++) {
+      // EdgeOne routes by the Host header: re-point it at every hop or the redirected
+      // fetch lands on the previous host (site-wide failure). / EdgeOne 按 Host 头路由：
+      // 每跳都要把 Host 改指当前目标，否则重定向请求会打到上一个主机（全站失败）。
+      headers.set('Host', current.host);
+      const res = await fetch(current, {
+        method,
+        headers,
+        body: ['GET', 'HEAD'].includes(method) ? undefined : body,
+        redirect: 'manual',
+      });
+      if (res.status < 300 || res.status >= 400) return res;
+      const loc = res.headers.get('location');
+      if (!loc) return res;
+      let next;
+      try {
+        next = new URL(loc, current);
+      } catch (e) {
+        return jsonError(502, 'upstream error');
+      }
+      if (!ALLOWED_HOSTS.has(next.hostname)) {
+        return jsonError(403, 'not allowed');
+      }
+      current = next;
+    }
+    return jsonError(502, 'upstream error');
+  }
+
   let upstream;
   try {
-    upstream = await fetch(target, {
-      method: request.method,
-      headers,
-      body: ['GET', 'HEAD'].includes(request.method) ? undefined : request.body,
-      redirect: 'follow', // release assets 302 to objects.githubusercontent.com / release 资产 302 到 objects.githubusercontent.com
-    });
+    upstream = await fetchUpstream(target, headers, request.method, request.body);
   } catch (e) {
     // Single retry for transient upstream failures / 单次重试应对上游偶发失败
     try {
-      upstream = await fetch(target, {
-        method: request.method,
-        headers,
-        body: ['GET', 'HEAD'].includes(request.method) ? undefined : request.body,
-        redirect: 'follow',
-      });
+      upstream = await fetchUpstream(target, headers, request.method, request.body);
     } catch (e2) {
       return jsonError(502, 'upstream error');
     }

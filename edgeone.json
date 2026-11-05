@@ -2,5 +2,5 @@
   "buildCommand": "",
   "installCommand": "",
   "outputDirectory": "./public",
-  "nodeVersion": "22.11.0"
+  "nodeVersion": "24.11.0"
 }

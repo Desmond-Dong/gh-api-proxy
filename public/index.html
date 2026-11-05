@@ -4,29 +4,22 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Home Assistant Marketplace / 专用服务</title>
-<style>
-  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f6f8fa; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; color: #24292f; }
-  .card { background: #fff; border: 1px solid #d0d7de; border-radius: 12px; padding: 48px 40px; max-width: 560px; margin: 24px; text-align: center; }
-  .icon { font-size: 48px; }
-  h1 { font-size: 22px; margin: 16px 0 4px; }
-  h1 .en { display: block; font-size: 15px; color: #8b949e; font-weight: 400; margin-top: 6px; }
-  p { color: #57606a; line-height: 1.9; margin: 12px 0 4px; font-size: 15px; }
-  p.en { color: #8b949e; font-size: 13px; line-height: 1.7; margin: 0 0 10px; }
-  nav { margin-top: 28px; padding-top: 20px; border-top: 1px solid #eaeef2; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  nav a { display: inline-block; padding: 8px 18px; border: 1px solid #d0d7de; border-radius: 8px; color: #24292f; text-decoration: none; font-size: 14px; background: #f6f8fa; }
-  nav a:hover { background: #eaeef2; }
-</style>
+<link rel="stylesheet" href="/assets/site.css">
 </head>
-<body>
-<div class="card">
-  <div class="icon">🏠</div>
-  <h1>此服务仅供 Home Assistant Marketplace 使用<span class="en">This service is dedicated to Home Assistant Marketplace</span></h1>
-  <p>本服务为专用代理，不对外提供其他功能，其他需求无法满足，请勿滥用。</p>
-  <p class="en">This is a dedicated proxy. It serves no other purposes — please do not abuse it.</p>
+<body class="centered hero-bg">
+<div class="card narrow hero-card">
+  <img class="logo" src="https://www.hasscn.top/home-assistant-wordmark-with-margins-color-on-light.png" alt="Home Assistant">
+  <h1 class="hero-title">Home Assistant Marketplace 服务<span class="en">Home Assistant Marketplace service</span></h1>
+  <p class="hero-sub">本服务专为 Home Assistant Marketplace 提供支持，不提供其他功能。</p>
+  <p class="en">This service is built for the Home Assistant Marketplace only.</p>
   <nav>
-    <a href="/contributors/">贡献者 / Contributors</a>
-    <a href="/share/">共享 Token / Share Token</a>
+    <a href="/contributors/">贡献者<span class="btn-en">Contributors</span></a>
+    <a class="primary" href="/share/">共享 Token<span class="btn-en">Share Token</span></a>
   </nav>
+  <footer class="links">
+    <a href="https://www.home-assistant.io/" target="_blank" rel="noopener">Home Assistant 官网<span class="btn-en">home-assistant.io</span></a>
+    <a href="https://www.hasscn.top/" target="_blank" rel="noopener">HASSCN 社区<span class="btn-en">hasscn.top</span></a>
+  </footer>
 </div>
 </body>
 </html>

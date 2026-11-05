@@ -1,0 +1,89 @@
+/* site.css — 全站公共样式 / site-wide shared styles
+   三页共用：排版基底、卡片、双语分行规则、返回链接
+   Shared by all pages: typography base, card, bilingual line-split rules, back link */
+
+/* ---- base / 基底 ---- */
+body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; background: #f6f8fa; margin: 0; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; color: #24292f; }
+body.centered { align-items: center; } /* 首页垂直居中 / home page vertical centering */
+
+.card { background: #fff; border: 1px solid #d0d7de; border-radius: 12px; padding: 40px; max-width: 1100px; margin: 40px 24px; width: 100%; }
+.card.narrow { max-width: 560px; padding: 48px 40px; margin: 24px; text-align: center; } /* 首页窄卡 / home narrow card */
+
+.icon { font-size: 40px; }
+.narrow .icon { font-size: 48px; }
+
+h1 { font-size: 20px; margin: 12px 0 4px; }
+.narrow h1 { font-size: 22px; margin: 16px 0 4px; }
+h1 .en { display: block; font-size: 14px; color: #8b949e; font-weight: 400; margin-top: 5px; }
+.narrow h1 .en { font-size: 15px; margin-top: 6px; }
+
+p { color: #57606a; line-height: 1.9; margin: 14px 0 4px; font-size: 14px; }
+p.en, p.desc.en { color: #8b949e; font-size: 12.5px; line-height: 1.7; margin: 0 0 8px; }
+.narrow p { margin: 12px 0 4px; font-size: 15px; }
+.narrow p.en { font-size: 13px; margin: 0 0 10px; }
+
+a { color: #0969da; text-decoration: none; }
+
+/* ---- bilingual split rules / 双语分行规则: 中文正常字号在前, 英文灰色小字独立成段 ---- */
+.step-en { font-size: 12px; color: #8b949e; line-height: 1.6; margin-top: 2px; }
+.btn-en { display: block; font-size: 12px; font-weight: 400; opacity: .85; margin-top: 2px; }
+
+/* ---- back link / 返回链接 ---- */
+.back { display: inline-block; margin-bottom: 16px; color: #0969da; text-decoration: none; font-size: 14px; }
+.back .step-en { display: block; font-size: 12px; color: #8b949e; margin-top: 2px; }
+
+/* ---- home nav / 首页导航 ---- */
+nav { margin-top: 28px; padding-top: 20px; border-top: 1px solid #eaeef2; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+nav a { display: inline-block; padding: 8px 18px; border: 1px solid #d0d7de; border-radius: 8px; color: #24292f; text-decoration: none; font-size: 14px; background: #f6f8fa; }
+nav a:hover { background: #eaeef2; }
+nav a .btn-en { font-size: 11.5px; color: #8b949e; opacity: 1; margin-top: 3px; }
+
+/* ---- home logo & footer links / 首页 LOGO 与底部链接 ---- */
+.logo { display: block; width: 260px; max-width: 72%; margin: 4px auto 12px; filter: drop-shadow(0 2px 10px rgba(255,115,60,.18)); }
+.links { margin-top: 22px; padding-top: 18px; border-top: 1px solid #eaeef2; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.links a { display: inline-block; padding: 7px 16px; border: 1px solid #d0d7de; border-radius: 999px; color: #24292f; text-decoration: none; font-size: 13px; background: #fff; transition: background .15s, border-color .15s; }
+.links a:hover { background: #eaeef2; border-color: #b6bec6; }
+.links a .btn-en { font-size: 11px; color: #8b949e; opacity: 1; margin-top: 2px; }
+
+/* ---- hero polish / 首页视觉升级 ---- */
+.hero-bg { background: linear-gradient(180deg, #fdf6f2 0%, #f2f6fb 55%, #f6f8fa 100%); }
+.hero-card { box-shadow: 0 12px 40px rgba(35, 66, 110, .10), 0 2px 8px rgba(35, 66, 110, .05); border-color: #e3e8ee; }
+.hero-title { font-size: 21px; letter-spacing: .2px; }
+.hero-sub { font-size: 14px; max-width: 40em; margin-left: auto; margin-right: auto; }
+nav a { transition: background .15s, border-color .15s, transform .15s; }
+nav a:hover { transform: translateY(-1px); }
+nav a.primary { background: #1a7f37; border-color: #1a7f37; color: #fff; }
+nav a.primary:hover { background: #146c2e; border-color: #146c2e; }
+nav a.primary .btn-en { color: rgba(255,255,255,.8); }
+
+/* ---- share page / 共享页 ---- */
+.privacy { background: #fff8e6; border: 1px solid #eac54f; border-radius: 10px; padding: 18px 20px; margin: 20px 0; }
+.privacy h2 { font-size: 15px; margin: 0 0 4px; color: #7d5a00; }
+.privacy h2 .en { display: block; font-size: 12px; color: #a8842c; font-weight: 400; margin-top: 4px; }
+.privacy ul { margin: 12px 0 4px; padding-left: 20px; }
+.privacy li { margin: 10px 0; line-height: 1.8; font-size: 14px; color: #57606a; }
+.privacy li .en { display: block; font-size: 12px; color: #8b949e; line-height: 1.7; margin-top: 3px; }
+
+button { width: 100%; padding: 12px; font-size: 15px; border: 0; border-radius: 8px; background: #1a7f37; color: #fff; cursor: pointer; margin-top: 8px; }
+button:hover { background: #146c2e; }
+button:disabled { background: #8b949e; cursor: not-allowed; }
+
+.step { margin: 14px 0; padding: 14px 16px; border: 1px dashed #d0d7de; border-radius: 8px; display: none; font-size: 14px; }
+.step .code { font-size: 26px; font-weight: 700; letter-spacing: 3px; color: #0969da; margin: 6px 0; }
+
+.status { margin-top: 12px; font-size: 14px; color: #57606a; min-height: 20px; }
+.status.ok { color: #1a7f37; font-weight: 600; }
+.hint { margin-top: 10px; font-size: 13px; color: #57606a; line-height: 1.8; text-align: left; }
+
+/* ---- contributors page / 贡献者页 ---- */
+table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
+th, td { padding: 10px 12px; border-bottom: 1px solid #eaeef2; text-align: left; }
+th { color: #57606a; font-weight: 600; font-size: 13px; background: #f6f8fa; }
+th .en { display: block; font-weight: 400; color: #8b949e; font-size: 11px; }
+td a { color: #0969da; text-decoration: none; }
+.muted { color: #8b949e; }
+td.step-en { font-size: 12px; color: #8b949e; }
+td.no-top-border { border-top: none; }
+p.join { margin-top: 18px; }
+.pill { display: inline-block; padding: 2px 10px; border-radius: 10px; font-size: 12px; background: #e7f2e8; color: #1a7f37; }
+.pill.low { background: #fff1e5; color: #bc4c00; }
