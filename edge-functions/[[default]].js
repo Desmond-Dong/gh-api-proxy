@@ -54,8 +54,8 @@ const BLOCKED_EXTENSIONS = new Set([
   '.iso', '.dmg', '.img', '.tar', '.7z', '.rar', '.bz2', '.xz',
   // installers & packages / 安装包
   '.apk', '.exe', '.msi', '.deb', '.rpm',
-  // video / 视频
-  '.mp4', '.mkv', '.avi', '.mov', '.webm', '.flv', '.ts',
+  // video / 视频（不含 .ts——TypeScript 源码共用该扩展名，插件源码树可能包含）
+  '.mp4', '.mkv', '.avi', '.mov', '.webm', '.flv',
   // heavy media & assets / 大体积媒体与资产
   '.psd', '.ai', '.tiff',
   // vm disks / 虚拟机磁盘
