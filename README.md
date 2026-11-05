@@ -1,6 +1,6 @@
-# gh-api-proxy
+# ha-marketplace-bridge
 
-GitHub reverse proxy running on EdgeOne Pages edge nodes, built for Home Assistant Marketplace.
+Home Assistant Marketplace service bridge running on EdgeOne Pages edge nodes.
 
 ## Usage
 
@@ -58,9 +58,9 @@ Home Assistant Marketplace
 - **Download endpoints stay anonymous for public repos** (they don't consume the
   API quota): release downloads, source archives, and the objects CDN.
 - **Note on remapped raw files:** although raw.githubusercontent.com itself serves
-  anonymous downloads for public repos, this proxy remaps raw requests to the
+  anonymous downloads for public repos, this service remaps raw requests to the
   Contents API (api.github.com), so those requests DO consume the shared pool's
-  authenticated API quota. Direct raw downloads through the proxy would fail anyway
+  authenticated API quota. Direct raw downloads through the service would fail anyway
   (EdgeOne egress cannot reach raw's Fastly hosts).
 - **`/share/device/*` endpoints** (token sharing page) talk to GitHub's OAuth Device
   Flow on behalf of the visitor; the issued token is validated via `/user` and stays
@@ -77,7 +77,7 @@ Home Assistant Marketplace
 
 | Aspect | Behavior |
 |---|---|
-| URL path | Proxy-style prefix; the inner GitHub URL is parsed, then either passed through as-is (allowlist hosts) or remapped (raw → Contents API) |
+| URL path | Service-style prefix; the inner GitHub URL is parsed, then either passed through as-is (allowlist hosts) or remapped (raw → Contents API) |
 | Method | Passed through unchanged |
 | Query string | Passed through (the outer request's search rides on the inner URL) |
 | Request body | Streamed through unchanged |
@@ -97,7 +97,7 @@ Home Assistant Marketplace
 3. Branches: `main` → production (auto-build on push), `dev` → preview (manual build)
 4. Bind an ICP-filed custom domain
 
-No proxy-related environment variables are required. The token-sharing endpoints read
+No service-related environment variables are required. The token-sharing endpoints read
 `Client_ID` / `Client_Secret` (OAuth App for the Device Flow) when enabled.
 
 ## Roadmap

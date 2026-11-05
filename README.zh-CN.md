@@ -1,6 +1,6 @@
-# gh-api-proxy / GitHub 反向代理
+# ha-marketplace-bridge / Home Assistant Marketplace 服务桥接
 
-运行在 EdgeOne Pages 边缘节点的 GitHub 反向代理，面向 Home Assistant Marketplace。
+运行在 EdgeOne Pages 边缘节点的 Home Assistant Marketplace 服务桥接。
 
 ## 用法
 
@@ -68,7 +68,7 @@ Home Assistant Marketplace
 
 | 环节 | 行为 |
 |---|---|
-| URL 路径 | 代理式前缀；解析内层 GitHub URL 后原样透传（白名单域名）或重映射（raw → Contents API） |
+| URL 路径 | 服务前缀；解析内层 GitHub URL 后原样透传（白名单域名）或重映射（raw → Contents API） |
 | 请求方法 | 原样透传 |
 | 查询参数 | 原样透传（内层 URL 的查询参数随外层请求传递） |
 | 请求体 | 流式透传，不做修改 |
@@ -88,7 +88,7 @@ Home Assistant Marketplace
 3. 分支：`main` 对应生产环境（push 自动构建），`dev` 对应预览环境（手动构建）
 4. 绑定已备案的自定义域名
 
-代理本身无需任何环境变量。启用 token 共享端点时，函数读取
+服务本身无需任何环境变量。启用 token 共享端点时，函数读取
 `Client_ID` / `Client_Secret`（Device Flow 用的 OAuth App）。
 
 ## 规划
