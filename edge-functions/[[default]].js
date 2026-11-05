@@ -36,8 +36,8 @@ const ALLOWED_HOSTS = new Set([
   'release-assets.githubusercontent.com',
 ]);
 
-// UA whitelist: only requests containing this substring pass / UA 白名单：只放行包含该子串的请求
-const ALLOWED_UA_SUBSTRING = 'HomeAssistantMarketplace';
+// UA whitelist: only requests containing one of these substrings pass / UA 白名单：只放行包含任一子串的请求
+const ALLOWED_UA_SUBSTRINGS = ['HomeAssistantMarketplace', 'HomeAssistant'];
 
 // Blocked file extensions / 屏蔽的文件类型黑名单
 // The HA Marketplace only downloads repo archives (.zip), release assets named by
@@ -160,7 +160,7 @@ export async function onRequest(context) {
 
   // UA whitelist check / UA 白名单校验
   const ua = request.headers.get('user-agent') || '';
-  if (!ua.includes(ALLOWED_UA_SUBSTRING)) {
+  if (!ALLOWED_UA_SUBSTRINGS.some((s) => ua.includes(s))) {
     return jsonError(403, 'not allowed');
   }
 
