@@ -38,6 +38,38 @@ const ALLOWED_HOSTS = new Set([
 // UA whitelist: only requests containing this substring pass / UA 白名单：只放行包含该子串的请求
 const ALLOWED_UA_SUBSTRING = 'HomeAssistantMarketplace';
 
+// Blocked file extensions / 屏蔽的文件类型黑名单
+// The HA Marketplace only downloads repo archives (.zip), release assets named by
+// hacs.json, and source files (.js/.yaml/.json). Everything below is impossible in
+// that flow — requests for them are treated as storage-abuse and rejected.
+// Marketplace 只会下载仓库归档(.zip)、hacs.json 点名的 release 资产和源文件
+// (.js/.yaml/.json)。以下类型在该流程中不可能出现，出现即视为把代理当网盘用，拒绝。
+// NOTE: intentionally NOT blocked: .zip (repo archives & release assets are the
+// legitimate channel), .js/.yaml/.json (actual Marketplace content), small media
+// (png/svg/gif used by themes), .py (integration source inside archives only).
+// 注意：不拦 .zip（仓库归档与 release 资产是正当通道）、.js/.yaml/.json（Marketplace
+// 真实内容）、小体积图片（主题可能用 png/svg/gif）、.py（集成源码只在归档内）。
+const BLOCKED_EXTENSIONS = new Set([
+  // disk images & archives / 磁盘镜像与压缩包
+  '.iso', '.dmg', '.img', '.tar', '.7z', '.rar', '.bz2', '.xz',
+  // installers & packages / 安装包
+  '.apk', '.exe', '.msi', '.deb', '.rpm',
+  // video / 视频
+  '.mp4', '.mkv', '.avi', '.mov', '.webm', '.flv', '.ts',
+  // heavy media & assets / 大体积媒体与资产
+  '.psd', '.ai', '.tiff',
+  // vm disks / 虚拟机磁盘
+  '.vmdk', '.qcow2',
+]);
+// True when the request path points at a single blocked file / 请求路径命中黑名单时返回 true
+function blockedFileRequest(pathname) {
+  const path = pathname.toLowerCase();
+  for (const ext of BLOCKED_EXTENSIONS) {
+    if (path.endsWith(ext)) return true;
+  }
+  return false;
+}
+
 // Per-IP rate limit for the proxy path / 代理主链路的每 IP 限流
 // Sliding 1h window, 600 req/IP: an HA Marketplace install pulls a handful of API calls
 // plus one archive per update; 600/h is far above any real client but caps scripted
@@ -149,6 +181,16 @@ export async function onRequest(context) {
     return jsonError(404, 'not found');
   }
   if (!ALLOWED_HOSTS.has(target.hostname)) {
+    return jsonError(403, 'not allowed');
+  }
+
+  // Blocked file types / 黑名单文件类型拦截
+  // Applies to every path form: raw single files, API contents, GitHub blob paths and
+  // release assets. Repo/source archives end in .zip which is not on the list, so the
+  // legitimate Marketplace channel is unaffected.
+  // 覆盖所有路径形态：raw 单文件、API contents、GitHub blob 路径与 release 资产。
+  // 仓库归档是 .zip 不在名单里，Marketplace 正当通道不受影响。
+  if (blockedFileRequest(target.pathname)) {
     return jsonError(403, 'not allowed');
   }
 
