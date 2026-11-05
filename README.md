@@ -1,4 +1,4 @@
-# ha-marketplace-bridge
+# ha-marketplace-relay
 
 Home Assistant Marketplace service bridge running on EdgeOne Pages edge nodes.
 

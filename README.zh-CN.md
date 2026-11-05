@@ -1,4 +1,4 @@
-# ha-marketplace-bridge / Home Assistant Marketplace 服务桥接
+# ha-marketplace-relay / Home Assistant Marketplace 服务桥接
 
 运行在 EdgeOne Pages 边缘节点的 Home Assistant Marketplace 服务桥接。
 
