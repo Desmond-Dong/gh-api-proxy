@@ -33,6 +33,7 @@ const ALLOWED_HOSTS = new Set([
   'gist.github.com',
   'gist.githubusercontent.com',
   'objects.githubusercontent.com',
+  'release-assets.githubusercontent.com',
 ]);
 
 // UA whitelist: only requests containing this substring pass / UA 白名单：只放行包含该子串的请求
